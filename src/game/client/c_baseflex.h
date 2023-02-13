@@ -179,7 +179,7 @@ public:
 	float			m_flexWeight[MAXSTUDIOFLEXCTRL];
 	CInterpolatedVarArray< float, MAXSTUDIOFLEXCTRL >	m_iv_flexWeight;
 
-	int				m_blinktoggle;
+	bool				m_blinktoggle;
 
 	static int		AddGlobalFlexController( const char *szName );
 	static char const *GetGlobalFlexControllerName( int idx );
@@ -252,7 +252,7 @@ private:
 	CUtlRBTree< FS_LocalToGlobal_t, unsigned short > m_LocalToGlobal;
 
 	float			m_blinktime;
-	int				m_prevblinktoggle;
+	bool			m_prevblinktoggle;
 
 	int				m_iBlink;
 	LocalFlexController_t				m_iEyeUpdown;

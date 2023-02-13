@@ -15,21 +15,6 @@
 #include "tier0/memdbgon.h"
 
 static CPDumpPanel *g_pPDumpPanel = NULL;
-
-#ifndef SDK2013CE
-
-
-
-// OKAY, so typeinfo.h somewhere re-enables a bunch of warnings about float to int conversion, etc., that
-//  we pragma'd away in platform.h, so this little compiler specific hack will eliminate those warnings while
-//  retaining our own warning setup...ywb
-#ifdef WIN32
-#pragma warning( push )
-#include <typeinfo.h>
-#pragma warning( pop )
-#endif
-
-#endif // !SDK2013CE
 using namespace vgui;
 
 CPDumpPanel *GetPDumpPanel()

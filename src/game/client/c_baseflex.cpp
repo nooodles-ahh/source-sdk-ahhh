@@ -38,7 +38,7 @@ ConVar g_CV_FlexSmooth("flex_smooth", "1", 0, "Applies smoothing/decay curve to 
 
 IMPLEMENT_CLIENTCLASS_DT(C_BaseFlex, DT_BaseFlex, CBaseFlex)
 	RecvPropArray3( RECVINFO_ARRAY(m_flexWeight), RecvPropFloat(RECVINFO(m_flexWeight[0]))),
-	RecvPropInt(RECVINFO(m_blinktoggle)),
+	RecvPropBool(RECVINFO(m_blinktoggle)),
 	RecvPropVector(RECVINFO(m_viewtarget)),
 
 #ifdef HL2_CLIENT_DLL

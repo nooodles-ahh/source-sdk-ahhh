@@ -88,11 +88,11 @@ END_DATADESC()
 
 void CPropThumper::Spawn( void )
 {
-	char *szModel = (char *)STRING( GetModelName() );
+	const char *szModel = (char *)STRING( GetModelName() );
 	if (!szModel || !*szModel)
 	{
 		szModel = THUMPER_MODEL_NAME;
-		SetModelName( AllocPooledString(szModel) );
+		SetModelName( AllocPooledString( THUMPER_MODEL_NAME ) );
 	}
 
 	Precache();

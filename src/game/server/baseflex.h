@@ -172,7 +172,7 @@ private:
 	CNetworkVector( m_viewtarget );
 
 	// Blink state
-	CNetworkVar( int, m_blinktoggle );
+	CNetworkVar( bool, m_blinktoggle );
 
 	// Array of active SceneEvents, in order oldest to newest
 	CUtlVector < CSceneEventInfo >		m_SceneEvents;

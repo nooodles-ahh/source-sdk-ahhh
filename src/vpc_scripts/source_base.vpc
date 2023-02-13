@@ -15,9 +15,6 @@ $Configuration "Debug"
 		$PreprocessorDefinitions		"VPC"
 		$PreprocessorDefinitions		"$BASE;_RETAIL"					[$RETAIL]
 		$PreprocessorDefinitions		"$BASE;RAD_TELEMETRY_DISABLED"	[$SOURCESDK]
-
-		$PreprocessorDefinitions		"$BASE;GAME_SDK2013"			[$GAME_SDK2013]
-		$PreprocessorDefinitions		"$BASE;GAME_ASW"				[$GAME_ASW]
 	}
 }
 
@@ -28,8 +25,5 @@ $Configuration "Release"
 		$PreprocessorDefinitions		"VPC"
 		$PreprocessorDefinitions		"$BASE;_RETAIL"					[$RETAIL]
 		$PreprocessorDefinitions		"$BASE;RAD_TELEMETRY_DISABLED"	[$SOURCESDK]
-
-		$PreprocessorDefinitions		"$BASE;GAME_SDK2013"			[$GAME_SDK2013]
-		$PreprocessorDefinitions		"$BASE;GAME_ASW"				[$GAME_ASW]
 	}
 }

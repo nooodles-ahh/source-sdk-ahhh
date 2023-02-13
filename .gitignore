@@ -55,6 +55,7 @@ stats.txt
 voice_ban.dt
 sound.cache
 textwindow_temp.html
+server_blacklist.txt
 
 # shader files
 *.tmp

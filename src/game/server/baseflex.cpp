@@ -59,7 +59,7 @@ REGISTER_SEND_PROXY_NON_MODIFIED_POINTER( SendProxy_FlexWeights );
 IMPLEMENT_SERVERCLASS_ST(CBaseFlex, DT_BaseFlex)
 // Note we can't totally disabled flexweights transmission since some things like blink and eye tracking are still done by the server
 	SendPropArray3	(SENDINFO_ARRAY3(m_flexWeight), SendPropFloat(SENDINFO_ARRAY(m_flexWeight), 12, SPROP_ROUNDDOWN, 0.0f, 1.0f ) /*, SendProxy_FlexWeights*/ ),
-	SendPropInt		(SENDINFO(m_blinktoggle), 1, SPROP_UNSIGNED ),
+	SendPropBool		(SENDINFO(m_blinktoggle)),
 	SendPropVector	(SENDINFO(m_viewtarget), -1, SPROP_COORD),
 #ifdef HL2_DLL
 	SendPropFloat	( SENDINFO_VECTORELEM(m_vecViewOffset, 0), 0, SPROP_NOSCALE ),

@@ -8,7 +8,8 @@ $Configuration
 	$General
 	{
 		// Request a specific compiler toolset.
-		$PlatformToolset "v143"
+		$PlatformToolset "v142" [$VS2019]
+		$PlatformToolset "v143" [$VS2022]
 	}
 
 	$General
@@ -35,7 +36,10 @@ $Configuration
 		$DisableSpecificWarnings	"$BASE;4838" // warning C4838: conversion from 'unsigned int' to 'const int32' requires a narrowing conversion
 		$DisableSpecificWarnings	"$BASE;5054" // warning C5054: operator '|': deprecated between enumerations of different types (compiling source file utlsymbol.cpp)
 		$DisableSpecificWarnings	"$BASE;5205" // warning C5205: delete of an abstract class 'ICvar::ICVarIteratorInternal' that has a non-virtual destructor results in undefined behavior
-
+		$DisableSpecificWarnings	"$BASE;4458;4459" // variable shadowing lol
+		$DisableSpecificWarnings	"$BASE;5055" // warning C5055: operator '-': deprecated between enumerations and floating-point types
+	
+		
 		// Having lots of warnings makes it harder to notice new, and possibly
 		// important warnings, both on buildbot and in the output window. Lots
 		// of warnings also makes it harder to skip through errors in the output

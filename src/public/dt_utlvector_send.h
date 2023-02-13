@@ -14,7 +14,7 @@
 #include "dt_utlvector_common.h"
 
 
-#define SENDINFO_UTLVECTOR( varName )	#varName, \
+#define SENDINFO_UTLVECTOR( varName )	(char *)#varName, \
 										offsetof(currentSendDTClass, varName), \
 										sizeof(((currentSendDTClass*)0)->varName[0]), \
 										GetEnsureCapacityTemplate( ((currentSendDTClass*)0)->varName )
