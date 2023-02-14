@@ -14,7 +14,7 @@
 #include "dt_utlvector_common.h"
 
 
-#define SENDINFO_UTLVECTOR( varName )	(char *)#varName, \
+#define SENDINFO_UTLVECTOR( varName )	#varName, \
 										offsetof(currentSendDTClass, varName), \
 										sizeof(((currentSendDTClass*)0)->varName[0]), \
 										GetEnsureCapacityTemplate( ((currentSendDTClass*)0)->varName )
@@ -43,7 +43,7 @@
 //		)
 //
 SendProp SendPropUtlVector(
-	char *pVarName,		// Use SENDINFO_UTLVECTOR to generate these first 4 parameters.
+	const char *pVarName,		// Use SENDINFO_UTLVECTOR to generate these first 4 parameters.
 	int offset,
 	int sizeofVar,
 	EnsureCapacityFn ensureFn,
