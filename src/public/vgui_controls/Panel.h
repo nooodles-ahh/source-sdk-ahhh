@@ -158,7 +158,11 @@ public:
 	Panel(Panel *parent, const char *panelName);
 	Panel(Panel *parent, const char *panelName, HScheme scheme);
 
+#ifdef WIN32
 	~Panel();
+#else
+	virtual ~Panel();
+#endif
 
 	// returns pointer to Panel's vgui VPanel interface handle
 	virtual VPANEL GetVPanel() { return _vpanel; }

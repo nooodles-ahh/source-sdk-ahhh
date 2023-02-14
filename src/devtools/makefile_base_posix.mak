@@ -44,7 +44,7 @@ CFLAGS = $(ARCH_FLAGS) $(CPPFLAGS) $(WARN_FLAGS) -fvisibility=$(SymbolVisibility
 ifeq ($(CXX),clang++)
 	CXXFLAGS = $(CFLAGS) -std=gnu++0x -Wno-c++11-narrowing -Wno-dangling-else
 else
-	CXXFLAGS = $(CFLAGS) $(WARN_CXX_FLAGS) -std=gnu++20 -Wno-narrowing -Wno-register -Wno-deprecated-enum-enum-conversion -Wno-deprecated-declarations -fpermissive -Wno-volatile -Wno-ignored-attributes -I/usr/include/freetype2
+	CXXFLAGS = $(CFLAGS) $(WARN_CXX_FLAGS) -std=gnu++17 -Wno-narrowing -Wno-register -Wno-deprecated-declarations -fpermissive -Wno-ignored-attributes -I/usr/include/freetype2
 endif
 DEFINES += -DVPROF_LEVEL=1 -DGNUC -DNO_HOOK_MALLOC -DNO_MALLOC_OVERRIDE
 LDFLAGS = $(CFLAGS) $(GCC_ExtraLinkerFlags) $(OptimizerLevel)
@@ -68,6 +68,7 @@ ifeq ($(OS),Linux)
 	# We should always specify -Wl,--build-id, as documented at:
 	# http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId.http://fedoraproject.org/wiki/Releases/FeatureBuildId
 	LDFLAGS += -Wl,--build-id
+	CRYPTOPPDIR=ubuntu12_32
 	# Set USE_VALVE_BINDIR to build with /Steam/tools/linux in the /valve/bin path.
 	#  Dedicated server uses this.
 	ifeq ($(USE_VALVE_BINDIR),1)
@@ -92,7 +93,7 @@ ifeq ($(OS),Linux)
 				VALVE_BINDIR = /valve/steam-runtime/bin/
 			endif
 		endif
-		GCC_VER =
+		GCC_VER = -9
 		MARCH_TARGET = pentium4
 		# On dedicated servers, some plugins depend on global variable symbols in addition to functions.
 		# So symbols like _Z16ClearMultiDamagev should show up when you do "nm server_srv.so" in TF2.
@@ -110,7 +111,7 @@ ifeq ($(OS),Linux)
 	CCACHE := 
 
 	ifeq ($(origin GCC_VER), undefined)
-	GCC_VER=-4.6
+	GCC_VER=-9
 	endif
 	ifeq ($(origin AR), default)
 		AR = $(VALVE_BINDIR)ar crs
@@ -140,10 +141,10 @@ ifeq ($(OS),Linux)
 		LIBSTDCXXPIC := $(shell $(CXX) -print-file-name=libstdc++-pic.a)
 	else
 		# pentium4 = MMX, SSE, SSE2 - no SSE3 (added in prescott) # -msse3 -mfpmath=sse
-		ARCH_FLAGS += -m32 -march=$(MARCH_TARGET) -mtune=core2 $(SSE_GEN_FLAGS)
+		ARCH_FLAGS += -m32 -fabi-compat-version=2 -march=$(MARCH_TARGET) -mtune=core2 $(SSE_GEN_FLAGS)
 		LD_SO = ld-linux.so.2
-		LIBSTDCXX := $(shell $(CXX) $(ARCH_FLAGS) -print-file-name=libstdc++.so)
-		LIBSTDCXXPIC := $(shell $(CXX) $(ARCH_FLAGS) -print-file-name=libstdc++.so)
+		LIBSTDCXX := $(shell $(CXX) $(ARCH_FLAGS) -print-file-name=libstdc++.so.6)
+		LIBSTDCXXPIC := $(shell $(CXX) $(ARCH_FLAGS) -print-file-name=libstdc++.so.6)
 		LDFLAGS += -m32
 	endif
 
