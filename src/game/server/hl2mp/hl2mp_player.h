@@ -41,6 +41,30 @@ public:
 class CHL2MP_Player : public CHL2_Player
 {
 public:
+#ifdef SecobMod__SAVERESTORE
+	virtual void SaveTransitionFile(void);
+#endif //SecobMod__SAVERESTORE
+
+	// Armor Ints.
+	int m_iArmor;
+	int m_iMaxArmor;
+	void	IncrementArmorValue( int nCount, int nMaxValue = -1 );
+	void	SetArmorValue( int value );
+	void	SetMaxArmorValue( int MaxArmorValue );
+	
+	// Armor gets.
+	int CHL2MP_Player::GetArmorValue()
+	{
+		return m_iArmor;
+	}
+
+
+	int CHL2MP_Player::GetMaxArmorValue()
+	{
+		return m_iMaxArmor;
+	}
+
+public:
 	DECLARE_CLASS( CHL2MP_Player, CHL2_Player );
 
 	CHL2MP_Player();
@@ -76,7 +100,13 @@ public:
 	virtual bool BecomeRagdollOnClient( const Vector &force );
 	virtual void Event_Killed( const CTakeDamageInfo &info );
 	virtual int OnTakeDamage( const CTakeDamageInfo &inputInfo );
+
+#ifdef SM_AI_FIXES
+	virtual bool WantsLagCompensationOnEntity( const CBaseEntity *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const; 
+#else
 	virtual bool WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const;
+#endif
+
 	virtual void FireBullets ( const FireBulletsInfo_t &info );
 	virtual bool Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex = 0);
 	virtual bool BumpWeapon( CBaseCombatWeapon *pWeapon );

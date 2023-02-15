@@ -897,6 +897,10 @@ void CPropJeep::FireCannon( void )
 
 	if ( m_bUnableToFire )
 		return;
+#ifdef SDK2013CE
+	//SecobMod__Information: Thanks to Sub-Zero, we have working hit effects from the tau cannon.
+	CDisablePredictionFiltering disabler;
+#endif
 
 	m_flCannonTime = gpGlobals->curtime + 0.2f;
 	m_bCannonCharging = false;
@@ -936,6 +940,11 @@ void CPropJeep::FireCannon( void )
 //-----------------------------------------------------------------------------
 void CPropJeep::FireChargedCannon( void )
 {
+
+#ifdef SDK2013CE
+	//SecobMod__Information: Thanks to Sub-Zero, we have working hit effects from the tau cannon.
+	CDisablePredictionFiltering disabler;
+#endif
 	bool penetrated = false;
 
 	m_bCannonCharging	= false;

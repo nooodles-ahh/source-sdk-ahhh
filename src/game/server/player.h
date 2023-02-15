@@ -253,6 +253,15 @@ public:
 	IPlayerInfo *GetPlayerInfo() { return &m_PlayerInfo; }
 	IBotController *GetBotController() { return &m_PlayerInfo; }
 
+#ifdef SecobMod__ENABLE_FAKE_PASSENGER_SEATS
+	void SafeVehicleExit(CBasePlayer *pPlayer);
+#endif //SecobMod__ENABLE_FAKE_PASSENGER_SEATS
+
+#ifdef SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+	bool m_bTransition; //SecobMod__Information:  This is important as it allows the game to save each players progress over a map change. Create the booleans required for transitions to work.
+	bool m_bTransitionTeleported; //SecobMod__Information:  This is important as it allows the game to save each players progress over a map change.  Create the booleans required for transitions to work.
+#endif //SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+
 	virtual void			SetModel( const char *szModelName );
 	void					SetBodyPitch( float flPitch );
 
@@ -282,7 +291,11 @@ public:
 	// Returns true if this player wants pPlayer to be moved back in time when this player runs usercmds.
 	// Saves a lot of overhead on the server if we can cull out entities that don't need to lag compensate
 	// (like team members, entities out of our PVS, etc).
+#ifdef SM_AI_FIXES
+	virtual bool			WantsLagCompensationOnEntity( const CBaseEntity	*pEntity, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const;
+#else
 	virtual bool			WantsLagCompensationOnEntity( const CBasePlayer	*pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const;
+#endif
 
 	virtual void			Spawn( void );
 	virtual void			Activate( void );

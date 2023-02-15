@@ -194,7 +194,11 @@ ConVar  player_debug_print_damage( "player_debug_print_damage", "0", FCVAR_CHEAT
 
 void CC_GiveCurrentAmmo( void )
 {
+#ifdef SM_AI_FIXES
+	CBasePlayer *pPlayer = UTIL_GetCommandClient(); 
+#else
 	CBasePlayer *pPlayer = UTIL_PlayerByIndex(1);
+#endif
 
 	if( pPlayer )
 	{
@@ -251,6 +255,11 @@ END_DATADESC()
 
 // Global Savedata for player
 BEGIN_DATADESC( CBasePlayer )
+
+#ifdef SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+	DEFINE_FIELD( m_bTransition, FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_bTransitionTeleported, FIELD_BOOLEAN ),
+#endif
 
 	DEFINE_EMBEDDED( m_Local ),
 #if defined USES_ECON_ITEMS
@@ -549,6 +558,11 @@ CBasePlayer *CBasePlayer::CreatePlayer( const char *className, edict_t *ed )
 CBasePlayer::CBasePlayer( )
 {
 	AddEFlags( EFL_NO_AUTO_EDICT_ATTACH );
+	
+#ifdef SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+	m_bTransition = false;
+	m_bTransitionTeleported = false;
+#endif
 
 #ifdef _DEBUG
 	m_vecAutoAim.Init();
@@ -728,7 +742,35 @@ int CBasePlayer::ShouldTransmit( const CCheckTransmitInfo *pInfo )
 	return BaseClass::ShouldTransmit( pInfo );
 }
 
+#ifdef SM_AI_FIXES
+bool CBasePlayer::WantsLagCompensationOnEntity( const CBaseEntity *pEntity, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const 
+{
+	//Tony; only check teams in teamplay
+	if ( gpGlobals->teamplay )
+	{
+		// Team members shouldn't be adjusted unless friendly fire is on.
+		if ( !friendlyfire.GetInt() && pEntity->GetTeamNumber() == GetTeamNumber() ) 
+			return false;
+	}
 
+	// If this entity hasn't been transmitted to us and acked, then don't bother lag compensating it.
+	if ( pEntityTransmitBits && !pEntityTransmitBits->Get( pEntity->entindex() ) ) 
+		return false;
+
+	const Vector &vMyOrigin = GetAbsOrigin();
+	const Vector &vHisOrigin = pEntity->GetAbsOrigin();
+
+	// get max distance player could have moved within max lag compensation time, 
+	// multiply by 1.5 to to avoid "dead zones"  (sqrt(2) would be the exact value)
+	//float maxDistance = 1.5 * pPlayer->MaxSpeed() * sv_maxunlag.GetFloat(); 
+	float maxspeed; 
+	CBasePlayer *pPlayer = ToBasePlayer((CBaseEntity*)pEntity); 
+	if ( pPlayer ) 
+		maxspeed = pPlayer->MaxSpeed(); 
+	else 
+		maxspeed = 600; 
+	float maxDistance = 1.5 * maxspeed * sv_maxunlag.GetFloat(); 
+#else
 bool CBasePlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
 {
 	// Team members shouldn't be adjusted unless friendly fire is on.
@@ -745,7 +787,8 @@ bool CBasePlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, cons
 	// get max distance player could have moved within max lag compensation time, 
 	// multiply by 1.5 to to avoid "dead zones"  (sqrt(2) would be the exact value)
 	float maxDistance = 1.5 * pPlayer->MaxSpeed() * sv_maxunlag.GetFloat();
-
+#endif	
+	
 	// If the player is within this distance, lag compensate them in case they're running past us.
 	if ( vHisOrigin.DistTo( vMyOrigin ) < maxDistance )
 		return true;
@@ -5451,7 +5494,9 @@ bool CBasePlayer::GetInVehicle( IServerVehicle *pVehicle, int nRole )
 
 	if ( !pVehicle->IsPassengerVisible( nRole ) )
 	{
-		AddEffects( EF_NODRAW );
+	#ifndef SecobMod__ALLOW_PLAYER_MODELS_IN_VEHICLES
+		AddEffects( EF_NODRAW ); //SecobMod__Information: This causes players to have invisible third person models in vehicles.
+	#endif
 	}
 
 	// Put us in the vehicle
@@ -6007,7 +6052,8 @@ static void CreateJalopy( CBasePlayer *pPlayer )
 	// Cheat to create a jeep in front of the player
 	Vector vecForward;
 	AngleVectors( pPlayer->EyeAngles(), &vecForward );
-	CBaseEntity *pJeep = (CBaseEntity *)CreateEntityByName( "prop_vehicle_jeep" );
+	//SecobMod - If episodic is enabled give the jalopy not the jeep.
+	CBaseEntity *pJeep = (CBaseEntity *)CreateEntityByName( "prop_vehicle_jalopy" );
 	if ( pJeep )
 	{
 		Vector vecOrigin = pPlayer->GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
@@ -6044,7 +6090,13 @@ static void CreateJeep( CBasePlayer *pPlayer )
 	// Cheat to create a jeep in front of the player
 	Vector vecForward;
 	AngleVectors( pPlayer->EyeAngles(), &vecForward );
+//Tony; in sp sdk, we have prop_vehicle_hl2buggy; because episode 2 modified the jeep code to turn it into the jalopy instead of the regular buggy
+//SecobMod__Information: Changed the define to hl2_episodic so people can summon the hl2 buggy.
+#ifdef HL2_EPISODIC
+	CBaseEntity *pJeep = (CBaseEntity *)CreateEntityByName( "prop_vehicle_hl2buggy" );
+#else
 	CBaseEntity *pJeep = (CBaseEntity *)CreateEntityByName( "prop_vehicle_jeep" );
+#endif
 	if ( pJeep )
 	{
 		Vector vecOrigin = pPlayer->GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
@@ -6053,7 +6105,11 @@ static void CreateJeep( CBasePlayer *pPlayer )
 		pJeep->SetAbsAngles( vecAngles );
 		pJeep->KeyValue( "model", "models/buggy.mdl" );
 		pJeep->KeyValue( "solid", "6" );
+	#ifdef SM_SP_FIXES
+		pJeep->KeyValue( "targetname", "hl2buggy" );
+	#else
 		pJeep->KeyValue( "targetname", "jeep" );
+	#endif
 		pJeep->KeyValue( "vehiclescript", "scripts/vehicles/jeep_test.txt" );
 		DispatchSpawn( pJeep );
 		pJeep->Activate();
@@ -7623,7 +7679,18 @@ void CStripWeapons::StripWeapons(inputdata_t &data, bool stripSuit)
 	}
 	else if ( !g_pGameRules->IsDeathmatch() )
 	{
+#ifdef SM_AI_FIXES
+	for (int i = 1; i <= gpGlobals->maxClients; i++ ) 
+	{ 
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i ); 
+		if ( pPlayer )
+		{
+		pPlayer->RemoveAllItems( stripSuit );
+		}
+	}
+#else
 		pPlayer = UTIL_GetLocalPlayer();
+#endif
 	}
 
 	if ( pPlayer )
@@ -7718,7 +7785,25 @@ void CRevertSaved::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE 
 	UTIL_ScreenFadeAll( m_clrRender, Duration(), HoldTime(), FFADE_OUT );
 	SetNextThink( gpGlobals->curtime + LoadTime() );
 	SetThink( &CRevertSaved::LoadThink );
+#ifdef SM_AI_FIXES
+	for (int i = 1; i <= gpGlobals->maxClients; i++ ) 
+	{ 
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i ); 
+		if ( !pPlayer ) 
+			continue; 
+			
+		if ( pPlayer )
+		{		
+			//Adrian: Setting this flag so we can't move or save a game.
+			pPlayer->pl.deadflag = true;
+			pPlayer->AddFlag( (FL_NOTARGET|FL_FROZEN) );
 
+			// clear any pending autosavedangerous
+			g_ServerGameDLL.m_fAutoSaveDangerousTime = 0.0f;
+			g_ServerGameDLL.m_fAutoSaveDangerousMinHealthToCommit = 0.0f;
+		}
+	}
+#else
 	CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
 
 	if ( pPlayer )
@@ -7731,6 +7816,7 @@ void CRevertSaved::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE 
 		g_ServerGameDLL.m_fAutoSaveDangerousTime = 0.0f;
 		g_ServerGameDLL.m_fAutoSaveDangerousMinHealthToCommit = 0.0f;
 	}
+#endif
 }
 
 void CRevertSaved::InputReload( inputdata_t &inputdata )
@@ -7781,6 +7867,16 @@ void CRevertSaved::LoadThink( void )
 	{
 		engine->ServerCommand("reload\n");
 	}
+#ifdef SM_AI_FIXES
+	//SecobMod__Information: Here we change level to the map we're already on if a vital ally such as Alyx is killed etc etc etc.
+	else
+	{
+		char *szDefaultMapName = new char[32];
+		Q_strncpy( szDefaultMapName, STRING(gpGlobals->mapname), 32 );
+		engine->ChangeLevel( szDefaultMapName, NULL );
+		return;
+	}
+#endif	
 }
 
 #define SF_SPEED_MOD_SUPPRESS_WEAPONS	(1<<0)	// Take away weapons
@@ -7857,7 +7953,11 @@ void CMovementSpeedMod::InputSpeedMod(inputdata_t &data)
 	}
 	else if ( !g_pGameRules->IsDeathmatch() )
 	{
+#ifdef SM_AI_FIXES
+		pPlayer = UTIL_GetNearestPlayer(GetAbsOrigin()); 
+#else
 		pPlayer = UTIL_GetLocalPlayer();
+#endif
 	}
 
 	if ( pPlayer )
@@ -9379,6 +9479,71 @@ void CBasePlayer::AdjustDrownDmg( int nAmount )
 	}
 }
 
+#ifdef SecobMod__ENABLE_FAKE_PASSENGER_SEATS
+//------------------------------------------------------------------------------
+// A small wrapper around SV_Move that never clips against the supplied entity.
+//------------------------------------------------------------------------------
+static bool TestEntityPosition ( CBasePlayer *pPlayer )
+{	
+	trace_t	trace;
+	UTIL_TraceEntity( pPlayer, pPlayer->GetAbsOrigin(), pPlayer->GetAbsOrigin(), MASK_PLAYERSOLID, &trace );
+	return (trace.startsolid == 0);
+}
+
+static int FindPassableSpace( CBasePlayer *pPlayer, const Vector& direction, float step, Vector& oldorigin )
+{
+	int i;
+	for ( i = 0; i < 100; i++ )
+	{
+		Vector origin = pPlayer->GetAbsOrigin();
+		VectorMA( origin, step, direction, origin );
+		pPlayer->SetAbsOrigin( origin );
+		if ( TestEntityPosition( pPlayer ) )
+		{
+			VectorCopy( pPlayer->GetAbsOrigin(), oldorigin );
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void CBasePlayer::SafeVehicleExit(CBasePlayer *pPlayer)
+{
+	CPlayerState *pl = PlayerData();
+	Assert( pl );
+
+	SetMoveType( MOVETYPE_WALK );
+	Vector oldorigin = GetAbsOrigin();
+	if ( !TestEntityPosition( this ) )
+	{
+		Vector forward, right, up;
+
+		AngleVectors ( pl->v_angle, &forward, &right, &up);
+		
+		// Try to move into the world
+		if ( !FindPassableSpace( this, forward, 1, oldorigin ) )
+		{
+			if ( !FindPassableSpace( this, right, 1, oldorigin ) )
+			{
+				if ( !FindPassableSpace( this, right, -1, oldorigin ) )		// left
+				{
+					if ( !FindPassableSpace( this, up, 1, oldorigin ) )	// up
+					{
+						if ( !FindPassableSpace( this, up, -1, oldorigin ) )	// down
+						{
+							if ( !FindPassableSpace( this, forward, -1, oldorigin ) )	// back
+							{
+							}
+						}
+					}
+				}
+			}
+		}	
+		SetAbsOrigin( oldorigin );
+		AddFlag(FL_ONGROUND);
+	}
+}
+#endif
 
 
 #if !defined(NO_STEAM)

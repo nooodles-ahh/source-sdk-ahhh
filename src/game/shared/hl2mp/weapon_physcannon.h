@@ -29,4 +29,8 @@ float PhysCannonGetHeldObjectMass( CBaseCombatWeapon *pActiveWeapon, IPhysicsObj
 
 CBaseEntity *PhysCannonGetHeldEntity( CBaseCombatWeapon *pActiveWeapon );
 
+#ifdef SM_SP_FIXES
+	CBaseEntity *GetPlayerHeldEntity( CBasePlayer *pPlayer );
+#endif
+
 #endif // WEAPON_PHYSCANNON_H

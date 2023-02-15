@@ -754,6 +754,14 @@ void CServerGameDLL::PostInit()
 void CServerGameDLL::DLLShutdown( void )
 {
 
+	//SecobMod__Information: Clear the transition file.
+	#ifdef SecobMod__SAVERESTORE
+		FileHandle_t hFile = g_pFullFileSystem->Open( "transition.cfg", "w" );
+		CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
+		g_pFullFileSystem->WriteFile( "transition.cfg", "MOD", buf );
+		g_pFullFileSystem->Close( hFile );
+	#endif //SecobMod__SAVERESTORE
+
 	// Due to dependencies, these are not autogamesystems
 	ModelSoundsCacheShutdown();
 
@@ -1341,7 +1349,11 @@ void CServerGameDLL::Think( bool finalTick )
 	if ( m_fAutoSaveDangerousTime != 0.0f && m_fAutoSaveDangerousTime < gpGlobals->curtime )
 	{
 		// The safety timer for a dangerous auto save has expired
+	#ifdef SM_AI_FIXES
+		CBasePlayer *pPlayer = UTIL_GetLocalPlayer(); 
+	#else
 		CBasePlayer *pPlayer = UTIL_PlayerByIndex( 1 );
+	#endif
 
 		if ( pPlayer && ( pPlayer->GetDeathTime() == 0.0f || pPlayer->GetDeathTime() > gpGlobals->curtime )
 			&& !pPlayer->IsSinglePlayerGameEnding()
@@ -1374,6 +1386,11 @@ void CServerGameDLL::LevelShutdown( void )
 #endif
 
 	g_pServerBenchmark->EndBenchmark();
+
+#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+	extern ConVar sv_SecobMod__increment_killed;
+	sv_SecobMod__increment_killed.SetValue (0);
+#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
 
 	MDLCACHE_CRITICAL_SECTION();
 	IGameSystem::LevelShutdownPreEntityAllSystems();
@@ -2761,6 +2778,30 @@ void CServerGameClients::ClientDisconnect( edict_t *pEdict )
 				g_pGameRules->ClientDisconnected( pEdict );
 				gamestats->Event_PlayerDisconnected( player );
 			}
+			
+		//SecobMod__Information: If a client disconnects wipe them from the transition file. Note that if you want it so people who lag out can rejoin instantly without picking a class, then comment all this section out.
+		#ifdef SecobMod__SAVERESTORE
+		  KeyValues *pkvTransitionRestoreFile = new KeyValues( "transition.cfg" );
+			if ( pkvTransitionRestoreFile->LoadFromFile( filesystem, "transition.cfg" ) )
+			{
+				while ( pkvTransitionRestoreFile )
+				{
+					const char *pszSteamID = pkvTransitionRestoreFile->GetName(); //Gets our header, which we use the players SteamID for.
+					const char *PlayerSteamID = engine->GetPlayerNetworkIDString(player->edict()); //Finds the current players Steam ID.	
+		
+						if ( Q_strcmp( PlayerSteamID, pszSteamID ) != 0)	 
+						{
+							break;		 
+						}
+				KeyValues *pkvNULL= pkvTransitionRestoreFile->FindKey( pszSteamID );
+				pkvNULL->deleteThis();	
+				//pkvNULL = NULL;
+				//pkvNULL->SaveToFile( filesystem, pkvTransitionRestoreFile, NULL );
+				pkvTransitionRestoreFile->SaveToFile( filesystem, "cfg/transition.cfg" );
+				break;
+				}
+			}
+		#endif //SecobMod__SAVERESTORE
 		}
 
 		// Make sure all Untouch()'s are called for this client leaving
@@ -3197,7 +3238,12 @@ void CServerGameClients::GetBugReportInfo( char *buf, int buflen )
 
 	if ( gpGlobals->maxClients == 1 )
 	{
+	#ifdef SM_AI_FIXES
+		CBaseEntity *ent = FindPickerEntity( UTIL_GetLocalPlayer() ); 
+	#else
 		CBaseEntity *ent = FindPickerEntity( UTIL_PlayerByIndex(1) );
+	#endif
+
 		if ( ent )
 		{
 			Q_snprintf( buf, buflen, "Picker %i/%s - ent %s model %s\n",

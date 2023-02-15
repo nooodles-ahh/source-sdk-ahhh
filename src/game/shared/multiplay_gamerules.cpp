@@ -50,6 +50,17 @@
 
 REGISTER_GAMERULES_CLASS( CMultiplayRules );
 
+#ifdef SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+	//SecobMod__Information:  This sets what percentage of players are required in the changelevel trigger before map change takes effect. Currently it's set to 100% (all players required).
+	ConVar	mp_transition_players_percent( "mp_transition_players_percent",
+						  "100",
+						  FCVAR_NOTIFY|FCVAR_REPLICATED,
+						  "How many players in percent are needed for a level transition?" );
+		#ifndef CLIENT_DLL
+		ConVar sv_transitions( "sv_transitions", "1", FCVAR_NOTIFY|FCVAR_GAMEDLL, "Enable transitions" );
+		#endif
+#endif
+
 ConVar mp_chattime(
 		"mp_chattime", 
 		"10", 
@@ -689,7 +700,11 @@ ConVarRef suitcharger( "sk_suitcharger" );
 	//=========================================================
 	float CMultiplayRules::FlPlayerSpawnTime( CBasePlayer *pPlayer )
 	{
+	#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+		return gpGlobals->curtime + 3;//now!
+	#else
 		return gpGlobals->curtime;//now!
+	#endif
 	}
 
 	bool CMultiplayRules::AllowAutoTargetCrosshair( void )

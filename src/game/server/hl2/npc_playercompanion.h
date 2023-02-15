@@ -19,7 +19,11 @@
 
 #ifdef HL2_EPISODIC
 #include "ai_behavior_operator.h"
+#ifdef SM_AI_FIXES
+#include "../episodic/ai_behavior_passenger_companion.h"
+#else
 #include "ai_behavior_passenger_companion.h"
+#endif
 #endif
 
 #if defined( _WIN32 )
@@ -302,7 +306,7 @@ public:
 	void			InputSetReadinessMedium( inputdata_t &inputdata );
 	void			InputSetReadinessHigh( inputdata_t &inputdata );
 	void			InputLockReadiness( inputdata_t &inputdata );
-#if HL2_EPISODIC
+#ifdef HL2_EPISODIC
 	void			InputClearAllOuputs( inputdata_t &inputdata ); ///< annihilate every output on this npc
 #endif
 

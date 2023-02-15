@@ -790,7 +790,11 @@ float CGameRules::GetAmmoDamage( CBaseEntity *pAttacker, CBaseEntity *pVictim, i
 	float flDamage = 0;
 	CAmmoDef *pAmmoDef = GetAmmoDef();
 
+#ifdef SM_SP_FIXES
+	if ( pAttacker && pAttacker->IsPlayer() )
+#else
 	if ( pAttacker->IsPlayer() )
+#endif
 	{
 		flDamage = pAmmoDef->PlrDamage( nAmmoType );
 	}

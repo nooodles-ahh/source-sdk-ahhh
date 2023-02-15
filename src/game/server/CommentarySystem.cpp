@@ -224,6 +224,7 @@ LINK_ENTITY_TO_CLASS( point_commentary_viewpoint, CCommentaryViewPosition );
 //-----------------------------------------------------------------------------
 CBasePlayer *GetCommentaryPlayer( void )
 {
+#ifndef SM_AI_FIXES
 	CBasePlayer *pPlayer;
 
 	if ( gpGlobals->maxClients <= 1 )
@@ -237,6 +238,9 @@ CBasePlayer *GetCommentaryPlayer( void )
 	}
 
 	return pPlayer;
+#else
+	return UTIL_GetLocalPlayer(); 
+#endif //SM_AI_FIXES
 }
 
 //===========================================================================================================

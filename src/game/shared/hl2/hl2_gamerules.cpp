@@ -31,9 +31,13 @@ REGISTER_GAMERULES_CLASS( CHalfLife2 );
 
 BEGIN_NETWORK_TABLE_NOBASE( CHalfLife2, DT_HL2GameRules )
 	#ifdef CLIENT_DLL
+	#ifndef SM_SP_FIXES
 		RecvPropBool( RECVINFO( m_bMegaPhysgun ) ),
+	#endif
 	#else
+	#ifndef SM_SP_FIXES
 		SendPropBool( SENDINFO( m_bMegaPhysgun ) ),
+	#endif
 	#endif
 END_NETWORK_TABLE()
 
@@ -67,7 +71,9 @@ IMPLEMENT_NETWORKCLASS_ALIASED( HalfLife2Proxy, DT_HalfLife2Proxy )
 	END_SEND_TABLE()
 #endif
 
+#ifndef SM_SP_FIXES
 ConVar  physcannon_mega_enabled( "physcannon_mega_enabled", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
+#endif
 
 // Controls the application of the robus radius damage model.
 ConVar	sv_robust_explosions( "sv_robust_explosions","1", FCVAR_REPLICATED );
@@ -214,7 +220,7 @@ bool CHalfLife2::Damage_IsTimeBased( int iDmgType )
 #ifdef CLIENT_DLL
 #else
 
-#ifdef HL2_EPISODIC
+#if !defined(SM_SP_FIXES) && defined(HL2_EPISODIC)
 ConVar  alyx_darkness_force( "alyx_darkness_force", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
 #endif // HL2_EPISODIC
 
@@ -248,7 +254,9 @@ ConVar  alyx_darkness_force( "alyx_darkness_force", "0", FCVAR_CHEAT | FCVAR_REP
 	//-----------------------------------------------------------------------------
 	CHalfLife2::CHalfLife2()
 	{
+	#ifndef SM_SP_FIXES
 		m_bMegaPhysgun = false;
+	#endif
 		
 		m_flLastHealthDropTime = 0.0f;
 		m_flLastGrenadeDropTime = 0.0f;
@@ -1325,7 +1333,7 @@ ConVar  alyx_darkness_force( "alyx_darkness_force", "0", FCVAR_CHEAT | FCVAR_REP
 	void CHalfLife2::Think( void )
 	{
 		BaseClass::Think();
-
+#ifndef SM_SP_FIXES
 		if( physcannon_mega_enabled.GetBool() == true )
 		{
 			m_bMegaPhysgun = true;
@@ -1335,6 +1343,7 @@ ConVar  alyx_darkness_force( "alyx_darkness_force", "0", FCVAR_CHEAT | FCVAR_REP
 			// FIXME: Is there a better place for this?
 			m_bMegaPhysgun = ( GlobalEntity_GetState("super_phys_gun") == GLOBAL_ON );
 		}
+#endif
 	}
 
 	//-----------------------------------------------------------------------------
@@ -1396,11 +1405,20 @@ ConVar  alyx_darkness_force( "alyx_darkness_force", "0", FCVAR_CHEAT | FCVAR_REP
 		if( pVictim->MyNPCPointer()->IsPlayerAlly() )
 		{
 			// A physics object has struck a player ally. Don't allow damage if it
-			// came from the player's physcannon. 
+			// came from any player's physcannon. 
+		#ifdef SM_SP_FIXES
+			for (int i = 1; i <= gpGlobals->maxClients; i++ )//
+			//AI Patch Removal: CBasePlayer *pPlayer = UTIL_PlayerByIndex(1);
+			{
+			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+			if ( !pPlayer )//AI Patch Removal
+			continue;
+		#else
 			CBasePlayer *pPlayer = UTIL_PlayerByIndex(1);
 
 			if( pPlayer )
 			{
+		#endif
 				CBaseEntity *pWeapon = pPlayer->HasNamedPlayerItem("weapon_physcannon");
 
 				if( pWeapon )
@@ -1518,12 +1536,14 @@ bool CHalfLife2::ShouldCollide( int collisionGroup0, int collisionGroup1 )
 		collisionGroup1 = COLLISION_GROUP_NPC;
 	}
 
+#ifndef SM_SP_FIXES
 	// This is only for the super physcannon
 	if ( m_bMegaPhysgun )
 	{
 		if ( collisionGroup0 == COLLISION_GROUP_INTERACTIVE_DEBRIS && collisionGroup1 == COLLISION_GROUP_PLAYER )
 			return false;
 	}
+#endif
 
 	if ( collisionGroup0 == HL2COLLISION_GROUP_COMBINE_BALL )
 	{
@@ -1738,6 +1758,7 @@ void CHalfLife2::LevelInitPreEntity()
 	BaseClass::LevelInitPreEntity();
 }
 
+#ifndef SM_AI_FIXES
 //-----------------------------------------------------------------------------
 // Returns whether or not Alyx cares about light levels in order to see.
 //-----------------------------------------------------------------------------
@@ -1766,7 +1787,7 @@ bool CHalfLife2::ShouldBurningPropsEmitLight()
 	return false;
 #endif // HL2_EPISODIC
 }
-
+#endif
 
 #endif//CLIENT_DLL
 

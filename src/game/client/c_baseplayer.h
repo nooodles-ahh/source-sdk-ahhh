@@ -82,6 +82,10 @@ public:
 	virtual void	Spawn( void );
 	virtual void	SharedSpawn(); // Shared between client and server.
 	virtual bool	GetSteamID( CSteamID *pID );
+		
+#ifdef SecobMod__ALLOW_PLAYER_MODELS_IN_VEHICLES
+	virtual const Vector &GetRenderOrigin();
+#endif //SecobMod__ALLOW_PLAYER_MODELS_IN_VEHICLES
 
 	// IClientEntity overrides.
 	virtual void	OnPreDataChanged( DataUpdateType_t updateType );

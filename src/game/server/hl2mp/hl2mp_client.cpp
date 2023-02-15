@@ -28,6 +28,10 @@
 
 #include "tier0/vprof.h"
 
+#ifdef SecobMod__SAVERESTORE
+#include "filesystem.h"
+#endif //SecobMod__SAVERESTORE
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -40,6 +44,12 @@ extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 {
+#ifdef SDK2013CE
+	// Don't do anything with the player if this is a background
+	if ( engine->IsLevelMainMenuBackground() )
+		return;
+#endif
+
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
 
@@ -67,10 +77,400 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
 
 	KeyValues *data = new KeyValues("data");
-	data->SetString( "title", title );		// info panel title
-	data->SetString( "type", "1" );			// show userdata from stringtable entry
-	data->SetString( "msg",	"motd" );		// use this stringtable entry
-	data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
+	data->SetString("title", title);		// info panel title
+	data->SetString("type", "1");			// show userdata from stringtable entry
+	data->SetString("msg", "motd");		// use this stringtable entry
+	data->SetBool("unload", sv_motd_unload_on_dismissal.GetBool());
+
+	pPlayer->ShowViewPortPanel(PANEL_INFO, true, data);
+
+
+#ifndef SecobMod__SAVERESTORE
+#endif //SecobMod__SAVERESTORE
+
+
+#ifdef SecobMod__SAVERESTORE 
+
+	//if (Transitioned)
+	//{
+	//SecobMod
+	KeyValues *pkvTransitionRestoreFile = new KeyValues("transition.cfg");
+
+	//Msg ("Transition path is: %s !!!!!\n",TransitionPath);
+
+	if (pkvTransitionRestoreFile->LoadFromFile(filesystem, "transition.cfg"))
+	{
+		while (pkvTransitionRestoreFile)
+		{
+			const char *pszSteamID = pkvTransitionRestoreFile->GetName(); //Gets our header, which we use the players SteamID for.
+			const char *PlayerSteamID = engine->GetPlayerNetworkIDString(pPlayer->edict()); //Finds the current players Steam ID.
+
+			Msg("In-File SteamID is %s.\n", pszSteamID);
+			Msg("In-Game SteamID is %s.\n", PlayerSteamID);
+
+			if (Q_strcmp(PlayerSteamID, pszSteamID) != 0)
+			{
+				if (pkvTransitionRestoreFile == NULL)
+				{
+					break;
+				}
+				//SecobMod__Information  No SteamID found for this person, maybe they're new to the game or have "STEAM_ID_PENDING". Show them the class menu and break the loop.
+				pPlayer->ShowViewPortPanel(PANEL_CLASS, true, NULL);
+				break;
+			}
+
+			Msg("SteamID Match Found!");
+
+			//Health
+			KeyValues *pkvHealth = pkvTransitionRestoreFile->FindKey("Health");
+
+			//Armour
+			KeyValues *pkvArmour = pkvTransitionRestoreFile->FindKey("Armour");
+
+			//CurrentHeldWeapon
+			KeyValues *pkvActiveWep = pkvTransitionRestoreFile->FindKey("ActiveWeapon");
+
+			//Weapon_0.
+			KeyValues *pkvWeapon_0 = pkvTransitionRestoreFile->FindKey("Weapon_0");
+			KeyValues *pkvWeapon_0_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_0_PriClip");
+			KeyValues *pkvWeapon_0_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_0_SecClip");
+			KeyValues *pkvWeapon_0_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_0_PriClipAmmo");
+			KeyValues *pkvWeapon_0_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_0_SecClipAmmo");
+			KeyValues *pkvWeapon_0_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_0_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_0_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_0_SecClipAmmoLeft");
+			//Weapon_1.
+			KeyValues *pkvWeapon_1 = pkvTransitionRestoreFile->FindKey("Weapon_1");
+			KeyValues *pkvWeapon_1_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_1_PriClip");
+			KeyValues *pkvWeapon_1_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_1_SecClip");
+			KeyValues *pkvWeapon_1_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_1_PriClipAmmo");
+			KeyValues *pkvWeapon_1_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_1_SecClipAmmo");
+			KeyValues *pkvWeapon_1_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_1_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_1_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_1_SecClipAmmoLeft");
+			//Weapon_2.
+			KeyValues *pkvWeapon_2 = pkvTransitionRestoreFile->FindKey("Weapon_2");
+			KeyValues *pkvWeapon_2_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_2_PriClip");
+			KeyValues *pkvWeapon_2_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_2_SecClip");
+			KeyValues *pkvWeapon_2_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_2_PriClipAmmo");
+			KeyValues *pkvWeapon_2_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_2_SecClipAmmo");
+			KeyValues *pkvWeapon_2_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_2_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_2_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_2_SecClipAmmoLeft");
+			//Weapon_3.
+			KeyValues *pkvWeapon_3 = pkvTransitionRestoreFile->FindKey("Weapon_3");
+			KeyValues *pkvWeapon_3_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_3_PriClip");
+			KeyValues *pkvWeapon_3_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_3_SecClip");
+			KeyValues *pkvWeapon_3_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_3_PriClipAmmo");
+			KeyValues *pkvWeapon_3_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_3_SecClipAmmo");
+			KeyValues *pkvWeapon_3_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_3_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_3_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_3_SecClipAmmoLeft");
+			//Weapon_4.
+			KeyValues *pkvWeapon_4 = pkvTransitionRestoreFile->FindKey("Weapon_4");
+			KeyValues *pkvWeapon_4_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_4_PriClip");
+			KeyValues *pkvWeapon_4_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_4_SecClip");
+			KeyValues *pkvWeapon_4_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_4_PriClipAmmo");
+			KeyValues *pkvWeapon_4_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_4_SecClipAmmo");
+			KeyValues *pkvWeapon_4_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_4_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_4_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_4_SecClipAmmoLeft");
+			//Weapon_5.
+			KeyValues *pkvWeapon_5 = pkvTransitionRestoreFile->FindKey("Weapon_5");
+			KeyValues *pkvWeapon_5_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_5_PriClip");
+			KeyValues *pkvWeapon_5_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_5_SecClip");
+			KeyValues *pkvWeapon_5_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_5_PriClipAmmo");
+			KeyValues *pkvWeapon_5_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_5_SecClipAmmo");
+			KeyValues *pkvWeapon_5_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_5_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_5_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_5_SecClipAmmoLeft");
+			//Weapon_6.
+			KeyValues *pkvWeapon_6 = pkvTransitionRestoreFile->FindKey("Weapon_6");
+			KeyValues *pkvWeapon_6_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_6_PriClip");
+			KeyValues *pkvWeapon_6_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_6_SecClip");
+			KeyValues *pkvWeapon_6_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_6_PriClipAmmo");
+			KeyValues *pkvWeapon_6_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_6_SecClipAmmo");
+			KeyValues *pkvWeapon_6_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_6_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_6_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_6_SecClipAmmoLeft");
+			//Weapon_7.
+			KeyValues *pkvWeapon_7 = pkvTransitionRestoreFile->FindKey("Weapon_7");
+			KeyValues *pkvWeapon_7_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_7_PriClip");
+			KeyValues *pkvWeapon_7_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_7_SecClip");
+			KeyValues *pkvWeapon_7_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_7_PriClipAmmo");
+			KeyValues *pkvWeapon_7_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_7_SecClipAmmo");
+			KeyValues *pkvWeapon_7_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_7_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_7_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_7_SecClipAmmoLeft");
+			//Weapon_8.
+			KeyValues *pkvWeapon_8 = pkvTransitionRestoreFile->FindKey("Weapon_8");
+			KeyValues *pkvWeapon_8_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_8_PriClip");
+			KeyValues *pkvWeapon_8_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_8_SecClip");
+			KeyValues *pkvWeapon_8_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_8_PriClipAmmo");
+			KeyValues *pkvWeapon_8_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_8_SecClipAmmo");
+			KeyValues *pkvWeapon_8_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_8_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_8_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_8_SecClipAmmoLeft");
+			//Weapon_9.
+			KeyValues *pkvWeapon_9 = pkvTransitionRestoreFile->FindKey("Weapon_9");
+			KeyValues *pkvWeapon_9_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_9_PriClip");
+			KeyValues *pkvWeapon_9_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_9_SecClip");
+			KeyValues *pkvWeapon_9_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_9_PriClipAmmo");
+			KeyValues *pkvWeapon_9_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_9_SecClipAmmo");
+			KeyValues *pkvWeapon_9_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_9_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_9_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_9_SecClipAmmoLeft");
+			//Weapon_10.
+			KeyValues *pkvWeapon_10 = pkvTransitionRestoreFile->FindKey("Weapon_10");
+			KeyValues *pkvWeapon_10_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_10_PriClip");
+			KeyValues *pkvWeapon_10_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_10_SecClip");
+			KeyValues *pkvWeapon_10_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_10_PriClipAmmo");
+			KeyValues *pkvWeapon_10_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_10_SecClipAmmo");
+			KeyValues *pkvWeapon_10_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_10_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_10_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_10_SecClipAmmoLeft");
+			//Weapon_11.
+			KeyValues *pkvWeapon_11 = pkvTransitionRestoreFile->FindKey("Weapon_11");
+			KeyValues *pkvWeapon_11_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_11_PriClip");
+			KeyValues *pkvWeapon_11_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_11_SecClip");
+			KeyValues *pkvWeapon_11_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_11_PriClipAmmo");
+			KeyValues *pkvWeapon_11_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_11_SecClipAmmo");
+			KeyValues *pkvWeapon_11_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_11_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_11_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_11_SecClipAmmoLeft");
+			//Weapon_12.
+			KeyValues *pkvWeapon_12 = pkvTransitionRestoreFile->FindKey("Weapon_12");
+			KeyValues *pkvWeapon_12_PriClip = pkvTransitionRestoreFile->FindKey("Weapon_12_PriClip");
+			KeyValues *pkvWeapon_12_SecClip = pkvTransitionRestoreFile->FindKey("Weapon_12_SecClip");
+			KeyValues *pkvWeapon_12_PriClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_12_PriClipAmmo");
+			KeyValues *pkvWeapon_12_SecClipAmmo = pkvTransitionRestoreFile->FindKey("Weapon_12_SecClipAmmo");
+			KeyValues *pkvWeapon_12_PriClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_12_PriClipAmmoLeft");
+			KeyValues *pkvWeapon_12_SecClipAmmoLeft = pkvTransitionRestoreFile->FindKey("Weapon_12_SecClipAmmoLeft");
+
+
+			//=====================================================================	
+			if (pszSteamID)
+			{
+
+				//Set ints for health and armour.
+
+				int PlayerHealthValue = pkvHealth->GetInt();
+				int PlayerArmourValue = pkvArmour->GetInt();
+
+				//Current Active Weapon
+				const char *pkvActiveWep_Value = pkvActiveWep->GetString();
+
+				pPlayer->m_iHealth = PlayerHealthValue;
+				pPlayer->m_iMaxHealth = 125;
+				pPlayer->SetArmorValue(PlayerArmourValue);
+				pPlayer->SetModel("models/sdk/Humans/Group03/male_06_sdk.mdl");
+				//Bug fix - if the below lines are removed the player is stuck with 0 movement, once they're able to move again we can remove the suit as required.
+				pPlayer->EquipSuit();
+				pPlayer->StartSprinting();
+				pPlayer->StopSprinting();
+
+				const char *pkvWeapon_Value = NULL;
+				int Weapon_PriClip_Value = 0;
+				const char *pkvWeapon_PriClipAmmo_Value = NULL;
+				int Weapon_SecClip_Value = 0;
+				const char *pkvWeapon_SecClipAmmo_Value = NULL;
+				int Weapon_PriClipCurrent_Value = 0;
+				int Weapon_SecClipCurrent_Value = 0;
+
+				//Loop through all of our weapon slots.
+				for (int i = 0; i < 12; i++)
+				{
+					if (i == 0)
+					{
+						pkvWeapon_Value = pkvWeapon_0->GetString();
+						Weapon_PriClip_Value = pkvWeapon_0_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_0_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_0_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_0_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_0_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_0_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 1)
+					{
+						pkvWeapon_Value = pkvWeapon_1->GetString();
+						Weapon_PriClip_Value = pkvWeapon_1_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_1_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_1_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_1_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_1_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_1_SecClipAmmoLeft->GetInt();
+
+					}
+					else if (i == 2)
+					{
+						pkvWeapon_Value = pkvWeapon_2->GetString();
+						Weapon_PriClip_Value = pkvWeapon_2_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_2_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_2_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_2_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_2_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_2_SecClipAmmoLeft->GetInt();
+
+					}
+					else if (i == 3)
+					{
+						pkvWeapon_Value = pkvWeapon_3->GetString();
+						Weapon_PriClip_Value = pkvWeapon_3_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_3_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_3_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_3_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_3_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_3_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 4)
+					{
+						pkvWeapon_Value = pkvWeapon_4->GetString();
+						Weapon_PriClip_Value = pkvWeapon_4_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_4_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_4_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_4_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_4_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_4_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 5)
+					{
+						pkvWeapon_Value = pkvWeapon_5->GetString();
+						Weapon_PriClip_Value = pkvWeapon_5_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_5_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_5_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_5_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_5_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_5_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 6)
+					{
+						pkvWeapon_Value = pkvWeapon_6->GetString();
+						Weapon_PriClip_Value = pkvWeapon_6_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_6_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_6_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_6_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_6_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_6_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 7)
+					{
+						pkvWeapon_Value = pkvWeapon_7->GetString();
+						Weapon_PriClip_Value = pkvWeapon_7_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_7_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_7_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_7_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_7_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_7_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 8)
+					{
+						pkvWeapon_Value = pkvWeapon_8->GetString();
+						Weapon_PriClip_Value = pkvWeapon_8_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_8_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_8_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_8_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_8_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_8_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 9)
+					{
+						pkvWeapon_Value = pkvWeapon_9->GetString();
+						Weapon_PriClip_Value = pkvWeapon_9_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_9_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_9_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_9_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_9_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_9_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 10)
+					{
+						pkvWeapon_Value = pkvWeapon_10->GetString();
+						Weapon_PriClip_Value = pkvWeapon_10_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_10_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_10_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_10_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_10_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_10_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 11)
+					{
+						pkvWeapon_Value = pkvWeapon_11->GetString();
+						Weapon_PriClip_Value = pkvWeapon_11_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_11_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_11_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_11_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_11_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_11_SecClipAmmoLeft->GetInt();
+					}
+					else if (i == 12)
+					{
+						pkvWeapon_Value = pkvWeapon_12->GetString();
+						Weapon_PriClip_Value = pkvWeapon_12_PriClip->GetInt();
+						pkvWeapon_PriClipAmmo_Value = pkvWeapon_12_PriClipAmmo->GetString();
+						Weapon_SecClip_Value = pkvWeapon_12_SecClip->GetInt();
+						pkvWeapon_SecClipAmmo_Value = pkvWeapon_12_SecClipAmmo->GetString();
+						Weapon_PriClipCurrent_Value = pkvWeapon_12_PriClipAmmoLeft->GetInt();
+						Weapon_SecClipCurrent_Value = pkvWeapon_12_SecClipAmmoLeft->GetInt();
+					}
+
+					//Now give the weapon and ammo.
+					pPlayer->GiveNamedItem((pkvWeapon_Value));
+					pPlayer->Weapon_Switch(pPlayer->Weapon_OwnsThisType(pkvWeapon_Value));
+					if (pPlayer->GetActiveWeapon()->UsesClipsForAmmo1())
+					{
+						if (Weapon_PriClipCurrent_Value != -1)
+						{
+							if (strcmp(pkvWeapon_Value, "weapon_crossbow") == 0)
+							{
+								pPlayer->GetActiveWeapon()->m_iClip1 = Weapon_PriClipCurrent_Value;
+								pPlayer->GetActiveWeapon()->m_iPrimaryAmmoType = Weapon_PriClip_Value;
+								pPlayer->GetActiveWeapon()->SetPrimaryAmmoCount(int(Weapon_PriClip_Value));
+								pPlayer->CBasePlayer::GiveAmmo(Weapon_PriClip_Value, Weapon_PriClip_Value);
+							}
+							else
+							{
+								pPlayer->GetActiveWeapon()->m_iClip1 = Weapon_PriClipCurrent_Value;
+								pPlayer->CBasePlayer::GiveAmmo(Weapon_PriClip_Value, pkvWeapon_PriClipAmmo_Value);
+								//Msg("Weapon primary clip value should be: %i\n", Weapon_PriClipCurrent_Value);
+							}
+						}
+					}
+					else
+					{
+						pPlayer->GetActiveWeapon()->m_iPrimaryAmmoType = Weapon_PriClip_Value;
+						pPlayer->GetActiveWeapon()->SetPrimaryAmmoCount(int(Weapon_PriClip_Value));
+						pPlayer->CBasePlayer::GiveAmmo(Weapon_PriClip_Value, Weapon_PriClip_Value);
+					}
+					if (pPlayer->GetActiveWeapon()->UsesClipsForAmmo2())
+					{
+						if (Weapon_SecClipCurrent_Value != -1)
+						{
+							if (strcmp(pkvWeapon_Value, "weapon_crossbow") == 0)
+							{
+								pPlayer->GetActiveWeapon()->m_iClip2 = Weapon_SecClipCurrent_Value;
+								pPlayer->GetActiveWeapon()->m_iSecondaryAmmoType = Weapon_SecClip_Value;
+								pPlayer->GetActiveWeapon()->SetSecondaryAmmoCount(int(Weapon_SecClip_Value));
+								pPlayer->CBasePlayer::GiveAmmo(Weapon_SecClip_Value, Weapon_SecClip_Value);
+							}
+							else
+							{
+								pPlayer->GetActiveWeapon()->m_iClip2 = Weapon_SecClipCurrent_Value;
+								pPlayer->CBasePlayer::GiveAmmo(Weapon_SecClip_Value, pkvWeapon_SecClipAmmo_Value);
+							}
+						}
+					}
+					else
+					{
+						pPlayer->GetActiveWeapon()->m_iSecondaryAmmoType = Weapon_SecClip_Value;
+						pPlayer->GetActiveWeapon()->SetSecondaryAmmoCount(int(Weapon_SecClip_Value));
+						pPlayer->CBasePlayer::GiveAmmo(Weapon_SecClip_Value, Weapon_SecClip_Value);
+					}
+				}
+				//Now restore the players Active Weapon (the weapon they had out at the level transition).
+				pPlayer->Weapon_Switch(pPlayer->Weapon_OwnsThisType(pkvActiveWep_Value));
+			}
+			else
+			{
+				//Something went wrong show the class panel.
+				pPlayer->ShowViewPortPanel(PANEL_CLASS, true, NULL);
+			}
+			break;
+		}
+	}
+	else
+	{
+		//Something went wrong show the class panel.
+		pPlayer->ShowViewPortPanel(PANEL_CLASS, true, NULL);
+	}
+#endif //SecobMod__SAVERESTORE 
 
 	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
 

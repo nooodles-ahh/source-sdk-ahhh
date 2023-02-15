@@ -18,6 +18,9 @@
 #include "ndebugoverlay.h"
 #include "ai_senses.h"
 
+//SecobMod__MiscFixes: Here we include the hl2mp gamerules so that calls to darkness mode work. Calls to HL2GameRules are also changed to HL2MPRules in this file for darkness mode to work.
+#include "hl2mp_gamerules.h"
+
 #ifdef HL2_EPISODIC
 	#include "info_darknessmode_lightsource.h"
 #endif
@@ -764,7 +767,11 @@ void CAI_FollowBehavior::GatherConditions( void )
 
 #ifdef HL2_EPISODIC
 	// Let followers know if the player is lit in the darkness
+#ifdef SM_AI_FIXES
+	if ( GetFollowTarget()->IsPlayer() && HL2MPRules()->IsAlyxInDarknessMode() )
+#else
 	if ( GetFollowTarget()->IsPlayer() && HL2GameRules()->IsAlyxInDarknessMode() )
+#endif
 	{
 		if ( LookerCouldSeeTargetInDarkness( GetOuter(), GetFollowTarget() ) )
 		{
@@ -848,7 +855,11 @@ bool CAI_FollowBehavior::ShouldMoveToFollowTarget()
 		return false;
 
 #ifdef HL2_EPISODIC
+#ifdef SM_AI_FIXES
+	if ( HL2MPRules()->IsAlyxInDarknessMode() )
+#else
 	if ( HL2GameRules()->IsAlyxInDarknessMode() )
+#endif
 	{
 		// If we're in darkness mode, the player needs to be lit by
 		// darkness, but we don't need line of sight to him.
@@ -1968,7 +1979,11 @@ void CAI_FollowBehavior::BuildScheduleTestBits()
 
 #ifdef HL2_EPISODIC
 		// In Alyx darkness mode, break on the player turning their flashlight off
+	#ifdef SM_AI_FIXES
+		if ( HL2MPRules()->IsAlyxInDarknessMode() )
+	#else
 		if ( HL2GameRules()->IsAlyxInDarknessMode() )
+	#endif
 		{
 			if ( IsCurSchedule(SCHED_FOLLOW, false) || IsCurSchedule(SCHED_MOVE_TO_FACE_FOLLOW_TARGET, false) ||
 				 IsCurSchedule(SCHED_FACE_FOLLOW_TARGET, false) )
@@ -2130,11 +2145,21 @@ void CAI_FollowGoal::EnableGoal( CAI_BaseNPC *pAI )
 		return;
 	
 	CBaseEntity *pGoalEntity = GetGoalEntity();
+	
+#ifdef SM_AI_FIXES
+	if ( !pGoalEntity ) 
+#else
 	if ( !pGoalEntity && AI_IsSinglePlayer() )
+#endif
 	{
-		if ( pAI->IRelationType(UTIL_GetLocalPlayer()) == D_LI )
+	#ifdef SM_AI_FIXES
+		CBasePlayer *pPlayer = UTIL_GetNearestPlayer(GetAbsOrigin()); 
+	#else
+		CBasePlayer *pPlayer = UTIL_GetLocalPlayer(); 
+	#endif
+		if ( pAI->IRelationType(pPlayer) == D_LI ) 
 		{
-			pGoalEntity = UTIL_GetLocalPlayer();
+			pGoalEntity = pPlayer;
 			SetGoalEntity( pGoalEntity );
 		}
 	}

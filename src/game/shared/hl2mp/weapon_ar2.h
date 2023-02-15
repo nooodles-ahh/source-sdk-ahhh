@@ -77,6 +77,14 @@ protected:
 	
 #if !defined( CLIENT_DLL ) || defined( SDK2013CE )
 	DECLARE_ACTTABLE();
+	
+#if defined(SM_AI_FIXES) && !defined(CLIENT_DLL)
+	int CapabilitiesGet( void ) { return bits_CAP_WEAPON_RANGE_ATTACK1; }
+	void Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
+	void Operator_ForceNPCFire( CBaseCombatCharacter *pOperator, bool bSecondary );
+	void FireNPCSecondaryAttack( CBaseCombatCharacter *pOperator, bool bUseWeaponAngles );
+	void FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, bool bUseWeaponAngles );
+#endif
 #endif
 };
 

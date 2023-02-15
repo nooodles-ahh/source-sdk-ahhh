@@ -38,6 +38,10 @@ public:
 	{
 		if ( m_distSq != 0 )
 		{
+		#ifdef SM_AI_FIXES
+            if (pEntity1 == NULL)
+				return false;
+		#endif
 			float distSq = ( pEntity1->GetAbsOrigin() - pEntity2->GetAbsOrigin() ).LengthSqr();
 			bool fInside = ( distSq < m_distSq );
 

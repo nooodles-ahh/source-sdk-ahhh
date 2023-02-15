@@ -1610,7 +1610,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	
 	bool bDoServerEffects = true;
 
-#if defined( HL2MP ) && defined( GAME_DLL )
+#if defined( HL2MP ) && defined( GAME_DLL ) && !defined(SM_SP_FIXES)
 	bDoServerEffects = false;
 #endif
 
@@ -2047,7 +2047,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 bool CBaseEntity::ShouldDrawUnderwaterBulletBubbles()
 {
 #if defined( HL2_DLL ) && defined( GAME_DLL )
+#ifdef SM_AI_FIXES
+	CBaseEntity *pPlayer = UTIL_GetNearestVisiblePlayer(this); 
+#else
 	CBaseEntity *pPlayer = ( gpGlobals->maxClients == 1 ) ? UTIL_GetLocalPlayer() : NULL;
+#endif
 	return pPlayer && (pPlayer->GetWaterLevel() == 3);
 #else
 	return false;
@@ -2549,11 +2553,23 @@ ConVar	sv_alternateticks( "sv_alternateticks", ( IsX360() ) ? "1" : "0", FCVAR_S
 //-----------------------------------------------------------------------------
 bool CBaseEntity::IsSimulatingOnAlternateTicks()
 {
+#ifdef SM_SP_FIXES
+	//.Kave's fix for slow motion single player problems.
+	if( gpGlobals->maxClients > 1 )
+	{
+		sv_alternateticks.SetValue( 1 );
+	}
+	else if( gpGlobals->maxClients == 1 )
+	{
+		sv_alternateticks.SetValue( 0 );
+	}
+#else
 	if ( gpGlobals->maxClients != 1 )
 	{
 		return false;
 	}
-
+#endif
+	
 	return sv_alternateticks.GetBool();
 }
 
