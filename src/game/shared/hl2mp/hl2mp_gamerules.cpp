@@ -49,9 +49,9 @@ extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
 extern bool FindInList( const char **pStrings, const char *pToFind );
 
-#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#ifdef SM_SP_FIXES
 ConVar  physcannon_mega_enabled( "physcannon_mega_enabled", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
-#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#endif
 
 ConVar sv_hl2mp_weapon_respawn_time( "sv_hl2mp_weapon_respawn_time", "20", FCVAR_GAMEDLL | FCVAR_NOTIFY );
 ConVar sv_hl2mp_item_respawn_time( "sv_hl2mp_item_respawn_time", "30", FCVAR_GAMEDLL | FCVAR_NOTIFY );
@@ -78,14 +78,14 @@ BEGIN_NETWORK_TABLE_NOBASE( CHL2MPRules, DT_HL2MPRules )
 
 	#ifdef CLIENT_DLL
 		RecvPropBool( RECVINFO( m_bTeamPlayEnabled ) ),
-		#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN
+		#ifdef SM_SP_FIXES
 				RecvPropBool( RECVINFO( m_bMegaPhysgun ) ),
-		#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN
+		#endif
 	#else
 		SendPropBool( SENDINFO( m_bTeamPlayEnabled ) ),
-		#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN	
+		#ifdef SM_SP_FIXES	
 				SendPropBool( SENDINFO( m_bMegaPhysgun ) ),
-		#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN	
+		#endif	
 	#endif
 
 END_NETWORK_TABLE()
@@ -208,9 +208,9 @@ const char *sTeamNames[] =
 
 CHL2MPRules::CHL2MPRules()
 {
-	#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#ifdef SM_SP_FIXES
 	m_bMegaPhysgun = false;
-	#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#endif
 #ifndef CLIENT_DLL
 	// Create the team managers
 	for ( int i = 0; i < ARRAYSIZE( sTeamNames ); i++ )
@@ -335,7 +335,7 @@ void CHL2MPRules::Think( void )
 {
 
 #ifndef CLIENT_DLL
-#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#ifdef SM_SP_FIXES
 	if( physcannon_mega_enabled.GetBool() == true )
 	{
 		m_bMegaPhysgun = true;
@@ -345,7 +345,7 @@ void CHL2MPRules::Think( void )
 		// FIXME: Is there a better place for this?
 		m_bMegaPhysgun = ( GlobalEntity_GetState("super_phys_gun") == GLOBAL_ON );
 	}
-#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#endif
 	
 	CGameRules::Think();
 
@@ -940,14 +940,14 @@ bool CHL2MPRules::ShouldCollide( int collisionGroup0, int collisionGroup1 )
 		return false;
 	}
 
-	#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN	
+	#ifdef SM_SP_FIXES	
 			// This is only for the super physcannon
 		if ( m_bMegaPhysgun )
 		{
 			if ( collisionGroup0 == COLLISION_GROUP_INTERACTIVE_DEBRIS && collisionGroup1 == COLLISION_GROUP_PLAYER )
 				return false;
 		}
-	#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN
+	#endif
 	
 	//SecobMod__Information: The below is added from hl2_gamerules.cpp and is required.
 	#ifdef SM_AI_FIXES

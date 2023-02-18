@@ -460,14 +460,22 @@ ConVarRef suitcharger( "sk_suitcharger" );
 	//=========================================================
 	bool CMultiplayRules::IsDeathmatch( void )
 	{
+#ifdef SDK2013CE
+		return gpGlobals->deathmatch;
+#else
 		return true;
+#endif
 	}
 
 	//=========================================================
 	//=========================================================
 	bool CMultiplayRules::IsCoOp( void )
 	{
+#ifdef SDK2013CE
+		return gpGlobals->coop;
+#else
 		return false;
+#endif
 	}
 
 	//=========================================================
@@ -678,8 +686,9 @@ ConVarRef suitcharger( "sk_suitcharger" );
 		bool		addDefault;
 		CBaseEntity	*pWeaponEntity = NULL;
 
+#ifndef SDK2013CE
 		pPlayer->EquipSuit();
-		
+#endif
 		addDefault = true;
 
 		while ( (pWeaponEntity = gEntList.FindEntityByClassname( pWeaponEntity, "game_player_equip" )) != NULL)

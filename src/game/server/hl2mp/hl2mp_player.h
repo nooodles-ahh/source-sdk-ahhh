@@ -53,13 +53,13 @@ public:
 	void	SetMaxArmorValue( int MaxArmorValue );
 	
 	// Armor gets.
-	int CHL2MP_Player::GetArmorValue()
+	int GetArmorValue()
 	{
 		return m_iArmor;
 	}
 
 
-	int CHL2MP_Player::GetMaxArmorValue()
+	int GetMaxArmorValue()
 	{
 		return m_iMaxArmor;
 	}

@@ -84,9 +84,9 @@ class CHL2MPRules : public CTeamplayRules
 public:
 	DECLARE_CLASS( CHL2MPRules, CTeamplayRules );
 
-#ifdef SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#ifdef SM_SP_FIXES
 	bool	MegaPhyscannonActive( void ) { return m_bMegaPhysgun;	}
-#endif //SecobMod__ALLOW_SUPER_GRAVITY_GUN
+#endif
 
 #ifdef CLIENT_DLL
 

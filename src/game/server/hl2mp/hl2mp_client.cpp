@@ -32,6 +32,10 @@
 #include "filesystem.h"
 #endif //SecobMod__SAVERESTORE
 
+#ifdef SM_SP_FIXES
+#include "cdll_int.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -44,25 +48,19 @@ extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 {
-#ifdef SDK2013CE
-	// Don't do anything with the player if this is a background
-	if ( engine->IsLevelMainMenuBackground() )
-		return;
-#endif
-
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
 
 
 	char sName[128];
 	Q_strncpy( sName, pPlayer->GetPlayerName(), sizeof( sName ) );
-	
+
 	// First parse the name and remove any %'s
 	for ( char *pApersand = sName; pApersand != NULL && *pApersand != 0; pApersand++ )
 	{
 		// Replace it with a space
 		if ( *pApersand == '%' )
-				*pApersand = ' ';
+			*pApersand = ' ';
 	}
 
 	// notify other clients of player joining the game
@@ -73,21 +71,22 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 		ClientPrint( pPlayer, HUD_PRINTTALK, "You are on team %s1\n", pPlayer->GetTeam()->GetName() );
 	}
 
-	const ConVar *hostname = cvar->FindVar( "hostname" );
-	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
-
-	KeyValues *data = new KeyValues("data");
-	data->SetString("title", title);		// info panel title
-	data->SetString("type", "1");			// show userdata from stringtable entry
-	data->SetString("msg", "motd");		// use this stringtable entry
-	data->SetBool("unload", sv_motd_unload_on_dismissal.GetBool());
-
-	pPlayer->ShowViewPortPanel(PANEL_INFO, true, data);
-
-
-#ifndef SecobMod__SAVERESTORE
-#endif //SecobMod__SAVERESTORE
-
+#ifdef SDK2013CE
+	if(gpGlobals->maxClients > 1 )
+#endif
+	{
+		const ConVar *hostname = cvar->FindVar( "hostname" );
+		const char *title = ( hostname ) ? hostname->GetString() : "MESSAGE OF THE DAY";
+	
+		KeyValues *data = new KeyValues( "data" );
+		data->SetString( "title", title );		// info panel title
+		data->SetString( "type", "1" );			// show userdata from stringtable entry
+		data->SetString( "msg", "motd" );		// use this stringtable entry
+		data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
+	
+		pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
+		data->deleteThis();
+	}
 
 #ifdef SecobMod__SAVERESTORE 
 
@@ -471,10 +470,6 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 		pPlayer->ShowViewPortPanel(PANEL_CLASS, true, NULL);
 	}
 #endif //SecobMod__SAVERESTORE 
-
-	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
-
-	data->deleteThis();
 }
 
 /*
@@ -494,6 +489,26 @@ void ClientPutInServer( edict_t *pEdict, const char *playername )
 
 void ClientActive( edict_t *pEdict, bool bLoadGame )
 {
+#ifdef SDK2013CE
+	if ( gpGlobals->maxClients == 1 )
+	{
+		CHL2MP_Player *pPlayer = ToHL2MPPlayer( CBaseEntity::Instance( pEdict ) );
+		Assert( pPlayer );
+
+		if ( !pPlayer )
+		{
+			return;
+		}
+
+		pPlayer->InitialSpawn();
+
+		if ( !bLoadGame )
+		{
+			pPlayer->Spawn();
+		}
+		return;
+	}
+#endif
 	// Can't load games in CS!
 	Assert( !bLoadGame );
 
@@ -560,19 +575,25 @@ void ClientGamePrecache( void )
 // called by ClientKill and DeadThink
 void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 {
-	CHL2MP_Player *pPlayer = ToHL2MPPlayer( pEdict );
-
-	if ( pPlayer )
+	if ( gpGlobals->maxClients > 1 )
 	{
-		if ( gpGlobals->curtime > pPlayer->GetDeathTime() + DEATH_ANIMATION_TIME )
-		{		
-			// respawn player
-			pPlayer->Spawn();			
-		}
-		else
+		CHL2MP_Player *pPlayer = ToHL2MPPlayer( pEdict );
+		if ( pPlayer )
 		{
-			pPlayer->SetNextThink( gpGlobals->curtime + 0.1f );
+			if ( gpGlobals->curtime > pPlayer->GetDeathTime() + DEATH_ANIMATION_TIME )
+			{
+				// respawn player
+				pPlayer->Spawn();
+			}
+			else
+			{
+				pPlayer->SetNextThink( gpGlobals->curtime + 0.1f );
+			}
 		}
+	}
+	else
+	{       // restart the entire server
+		engine->ServerCommand( "reload\n" );
 	}
 }
 

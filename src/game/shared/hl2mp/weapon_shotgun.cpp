@@ -208,6 +208,8 @@ acttable_t	CWeaponShotgun::m_acttable[] =
 };
 
 IMPLEMENT_ACTTABLE(CWeaponShotgun);
+#endif
+
 #ifdef SM_AI_FIXES
 #ifndef CLIENT_DLL
 //-----------------------------------------------------------------------------
@@ -229,7 +231,7 @@ void CWeaponShotgun::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, bool
 		GetAttachment( LookupAttachment( "muzzle" ), vecShootOrigin, angShootDir );
 		AngleVectors( angShootDir, &vecShootDir );
 	}
-	else 
+	else
 	{
 		vecShootOrigin = pOperator->Weapon_ShootPosition();
 		vecShootDir = npc->GetActualShootTrajectory( vecShootOrigin );
@@ -237,8 +239,6 @@ void CWeaponShotgun::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, bool
 
 	pOperator->FireBullets( 8, vecShootOrigin, vecShootDir, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0 );
 }
-
-#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 

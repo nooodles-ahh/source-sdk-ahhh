@@ -104,35 +104,28 @@ extern ConVar hl2_walkspeed;
 #ifdef CLIENT_DLL
 
 	//Precahce the effects
-	CLIENTEFFECT_REGISTER_BEGIN( PrecacheEffectPhysCannon )
-	CLIENTEFFECT_MATERIAL( "sprites/orangelight1.vmt" )
-	CLIENTEFFECT_MATERIAL( "sprites/orangelight1_noz.vmt" )
-	CLIENTEFFECT_MATERIAL( PHYSCANNON_GLOW_SPRITE )
-	CLIENTEFFECT_MATERIAL( PHYSCANNON_ENDCAP_SPRITE )
-	CLIENTEFFECT_MATERIAL( PHYSCANNON_CENTER_GLOW )
-	CLIENTEFFECT_MATERIAL( PHYSCANNON_BLAST_SPRITE )
-	CLIENTEFFECT_REGISTER_END()
+CLIENTEFFECT_REGISTER_BEGIN( PrecacheEffectPhysCannon )
+CLIENTEFFECT_MATERIAL( "sprites/orangelight1.vmt" )
+CLIENTEFFECT_MATERIAL( "sprites/orangelight1_noz.vmt" )
+CLIENTEFFECT_MATERIAL( PHYSCANNON_GLOW_SPRITE )
+CLIENTEFFECT_MATERIAL( PHYSCANNON_ENDCAP_SPRITE )
+CLIENTEFFECT_MATERIAL( PHYSCANNON_CENTER_GLOW )
+CLIENTEFFECT_MATERIAL( PHYSCANNON_BLAST_SPRITE )
+CLIENTEFFECT_REGISTER_END()
 
 #endif	// CLIENT_DLL
 
 #ifndef CLIENT_DLL
-
+#ifndef SM_SP_FIXES
 void PhysCannonBeginUpgrade( CBaseAnimating *pAnim )
 {
-#ifdef SM_SP_FIXES
-	CWeaponPhysCannon *pWeaponPhyscannon = assert_cast<CWeaponPhysCannon *>( pAnim );
-	pWeaponPhyscannon->BeginUpgrade();
-#endif
 }
 
 bool PlayerHasMegaPhysCannon( void )
 {
-#ifdef SM_SP_FIXES
-	return ( HL2MPRules()->MegaPhyscannonActive() == true );
-#else
 	return false;
-#endif
 }
+#endif
 
 bool PhysCannonAccountableForObject( CBaseCombatWeapon *pPhysCannon, CBaseEntity *pObject )
 {
@@ -1464,6 +1457,19 @@ CWeaponPhysCannon::CWeaponPhysCannon( void )
 	m_bPhyscannonState = false;
 #endif	
 }
+
+#ifdef SM_SP_FIXES
+void PhysCannonBeginUpgrade( CBaseAnimating *pAnim )
+{
+	CWeaponPhysCannon *pWeaponPhyscannon = assert_cast<CWeaponPhysCannon *>( pAnim );
+	pWeaponPhyscannon->BeginUpgrade();
+}
+
+bool PlayerHasMegaPhysCannon( void )
+{
+	return ( HL2MPRules()->MegaPhyscannonActive() == true );
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Precache

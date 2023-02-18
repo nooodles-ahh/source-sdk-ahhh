@@ -2145,10 +2145,10 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 		{
 			m_hActiveWeapon->Holster();
 			// FIXME: isn't this handeled by the weapon?
-			m_hActiveWeapon->AddEffects( EF_NODRAW );
+			m_hActiveWeapon->AddEffects( EF_NODRAW | EF_NOSHADOW );
 		}
 		SetActiveWeapon( pWeapon );
-		m_hActiveWeapon->RemoveEffects( EF_NODRAW );
+		m_hActiveWeapon->RemoveEffects( EF_NODRAW | EF_NOSHADOW );
 
 	}
 	
@@ -3115,7 +3115,7 @@ void CBaseCombatCharacter::VPhysicsShadowCollision( int index, gamevcollisioneve
 
 
 #if defined( HL2_DLL ) && (!defined( HL2MP ) || defined(SM_SP_FIXES))
-#ifdef defined(SM_SP_FIXES)
+#if defined(SM_SP_FIXES)
 	if ( HL2MPRules()->MegaPhyscannonActive() == true )
 #else
 	if ( HL2GameRules()->MegaPhyscannonActive() == true )

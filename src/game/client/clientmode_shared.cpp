@@ -256,6 +256,11 @@ static void __MsgFunc_VGUIMenu( bf_read &msg )
 		}
 	}
 
+#ifdef SM_SP_FIXES
+	if ( !Q_stricmp( panelname, PANEL_INFO ) && engine->IsLevelMainMenuBackground() )
+		return;
+#endif
+
 	// is the server trying to show an MOTD panel? Check that it's allowed right now.
 	ClientModeShared *mode = ( ClientModeShared * )GetClientModeNormal();
 	if ( Q_stricmp( panelname, PANEL_INFO ) == 0 && mode )

@@ -1549,8 +1549,8 @@ void CLagCompensationManager::FinishLagCompensation( CBasePlayer *player )
 		{
 			pNPC->SetSimulationTime(restore->m_flSimulationTime);
 		}
-	#endif //SM_AI_FIXES
 	}
+	#endif //SM_AI_FIXES
 	m_isCurrentlyDoingCompensation = false;
 }
 

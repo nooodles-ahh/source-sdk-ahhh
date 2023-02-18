@@ -451,7 +451,7 @@ void CHL2MP_Player::Spawn(void)
 	m_flNextModelChangeTime = 0.0f;
 	m_flNextTeamChangeTime = 0.0f;
 
-	PickDefaultSpawnTeam();
+	//PickDefaultSpawnTeam();
 
 	BaseClass::Spawn();
 	
@@ -544,7 +544,8 @@ void CHL2MP_Player::Spawn(void)
 
 		RemoveEffects( EF_NODRAW );
 		
-		GiveDefaultItems();
+		if( gpGlobals->maxClients > 1 && gpGlobals->deathmatch )
+			GiveDefaultItems();
 	}
 
 #ifndef SDK2013CE
@@ -1168,6 +1169,10 @@ bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 
 	pWeapon->CheckRespawn();
+#ifdef SDK2013CE
+	pWeapon->AddSolidFlags( FSOLID_NOT_SOLID );
+	pWeapon->AddEffects( EF_NODRAW );
+#endif
 	Weapon_Equip( pWeapon );
 
 	return true;
@@ -1633,90 +1638,15 @@ void CHL2MP_Player::DeathSound( const CTakeDamageInfo &info )
 	EmitSound( filter, entindex(), ep );
 }
 
+
 CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 {
+	return BaseClass::EntSelectSpawnPoint();
+#if 0
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
 	edict_t		*player = edict();
 	const char *pSpawnpointName = "info_player_deathmatch";
-
-#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
-	//SecobMod__Information: If you're killed, the killed count gets incremented past 1. This then enables the following code so that you respawn near to where you were killed, so that you don't respawn all the way back at the start of the map. There are fail-safes included to try to provide you with a valid spawning area. The spawn function also takes care of some of this.
-	if(sv_SecobMod__increment_killed.GetInt() >= 1)
-	{
-		CBaseEntity *pPlayerStart = CreateEntityByName( "info_player_deathmatch" );
-		pPlayerStart->SetAbsOrigin( respawn_origin );
-		pPlayerStart->Spawn();
-		pSpot = pPlayerStart;
-		pSpawnpointName = "info_player_deathmatch";
-
-		//SecobMod__Information: We need to calculate how safe this spawn point is to use.
-		CBaseEntity *ent = NULL;
-		for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 39 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
-		{
-			//SecobMod__Information: First off, lets check if where we want to spawn is currently occupied by an NPC or player other than ourselves.
-			if ( (ent->IsNPC()) || ent->IsPlayer() && !(ent->edict() == player) )
-			{
-				//SecobMod__Information: Check if the entity is on dry land.
-				if ( ent->GetWaterLevel() == 0)
-				{
-				AddFlag(FL_ONGROUND); // set the player on the ground at the start of the round.
-				//SecobMod__Information: The player start is considered safe to use, but first check if the ent is ducked, and as such we should spawn ducked in case it's a vent or enclosed area, otherwise we'll get stuck.
-						if ( ent->IsPlayer() && !(ent->edict() == player) && ent->GetFlags() & FL_DUCKING )
-						{
-						SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
-						AddFlag(FL_DUCKING);
-						m_Local.m_bDucked = true;
-						m_Local.m_bDucking = false;
-						}	
-				//SecobMod__Information: All safety checks in this area are now complete, now let's tell the code to spawn the player.
-				goto ReturnSpot;
-				}
-				else if (ent->GetWaterLevel() != 0 && ent->GetDamageType() == NULL)
-				{
-				//SecobMod__Information: Okay so they're in water but not taking damage so we'll happily spawn in the water.
-				//SecobMod__Information: Once more our checks are complete and we can safely spawn the player.
-				goto ReturnSpot;
-				}
-				else
-				{
-				//SecobMod__Information: They're taking damage and they're in water, this is a bad position to be in. So lets respawn where we last spawned, which should be safe (hopefully).
-				pSpot = pLastSpawnPoint;
-				goto ReturnSpot;
-				}
-			}
-			else
-			{
-			//SecobMod__Information: Our spawning area is now clear of NPCs and other players, but as a precaution, check that it's safe to spawn where we want to in-case of dangerous water.
-				if ( GetWaterLevel() == 0)
-				{
-				AddFlag(FL_ONGROUND); // set the player on the ground at the start of the round.
-					if (PlayerDucking == 1)
-					{
-					//SecobMod__Information: We were killed while ducked/ducking so lets spawn ducked in case we're in a vent or something
-					SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
-					AddFlag(FL_DUCKING);
-					m_Local.m_bDucked = true;
-					m_Local.m_bDucking = false;
-					//SecobMod__Information: Set PlayerDucking back to 0.
-					PlayerDucking = 0;
-					}
-				//SecobMod__Information: We say it's safe to spawn, and hope for the best.
-				goto ReturnSpot;
-				}
-				else
-				{
-				//SecobMod__Information: We'll spawn in water and we don't know if it may harm us, so spawn at our last spawn point for safety.
-				pSpot = pLastSpawnPoint;
-				goto ReturnSpot;
-				}
-			}
-			//SecobMod__Information: Shouldn't get here really, but just in-case we do let's make the player respawn at their last spawn point.
-			pSpot = pLastSpawnPoint;
-			goto ReturnSpot;
-		}
-	}
-#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
 
 	if ( HL2MPRules()->IsTeamplay() == true )
 	{
@@ -1780,105 +1710,28 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 		}
 		goto ReturnSpot;
 	}
-
-if ( !pSpot  )
-{
-#ifdef SM_AI_FIXES
-	char szMapName[256];
-	Q_strncpy(szMapName, STRING(gpGlobals->mapname), sizeof(szMapName) );
-	Q_strlower(szMapName);
-
-	//SecobMod__Information: Although we don't support official maps for gaming, they are useful for testing and these maps for whatever reason spawn you in the wrong location. As such this
-	// code is here to force players to spawn at the beginning of the selected maps. Custom maps won't require this as they will have deathmatch/class based player starts.
-	if( !Q_strnicmp( szMapName, "d1_canals_01a", 13 )
-|| !Q_strnicmp( szMapName, "d1_canals_03", 12 )
-|| !Q_strnicmp( szMapName, "d1_canals_13", 12 )
-|| !Q_strnicmp( szMapName, "d1_town_01", 10 )
-|| !Q_strnicmp( szMapName, "d1_town_01a", 11 )
-|| !Q_strnicmp( szMapName, "d1_town_02", 10 )
-|| !Q_strnicmp( szMapName, "d1_town_02a", 11 )
-|| !Q_strnicmp( szMapName, "d1_town_03", 10 )
-|| !Q_strnicmp( szMapName, "d1_town_04", 10 )
-|| !Q_strnicmp( szMapName, "d1_town_05", 10 )
-|| !Q_strnicmp( szMapName, "d2_coast_03", 11)
-|| !Q_strnicmp( szMapName, "d2_coast_08", 11 )
-|| !Q_strnicmp( szMapName, "d2_coast_11", 11 )
-|| !Q_strnicmp( szMapName, "d2_prison_01", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_02", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_03", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_04", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_05", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_06", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_07", 12 )
-|| !Q_strnicmp( szMapName, "d2_prison_08", 12 )
-|| !Q_strnicmp( szMapName, "d3_c17_08", 9 )
-|| !Q_strnicmp( szMapName, "d3_citadel_01", 13 )
-|| !Q_strnicmp( szMapName, "d3_citadel_02", 13 )
-|| !Q_strnicmp( szMapName, "d3_citadel_03", 13 )
-|| !Q_strnicmp( szMapName, "d3_citadel_04", 13 )
-|| !Q_strnicmp( szMapName, "d3_citadel_05", 13 )
-|| !Q_strnicmp( szMapName, "d3_breen_01", 11 )
-|| !Q_strnicmp( szMapName, "ep1_c17_00", 10 )
-|| !Q_strnicmp( szMapName, "ep1_c17_00a", 11 )
-|| !Q_strnicmp( szMapName, "ep1_c17_02b", 11 )
-|| !Q_strnicmp( szMapName, "ep1_c17_05", 10 )
-|| !Q_strnicmp( szMapName, "ep2_outland_01a", 15 )
-|| !Q_strnicmp( szMapName, "ep2_outland_03", 14 )
-|| !Q_strnicmp( szMapName, "ep2_outland_08", 14 )
-|| !Q_strnicmp( szMapName, "ep2_outland_06", 14 )
-	)
+	
+#ifdef SDK2013CE
+	// If startspot is set, (re)spawn there.
+	if ( !gpGlobals->startspot || !strlen( STRING( gpGlobals->startspot ) ) )
 	{
-		CBaseEntity *pEntity = NULL;
-		CBasePlayer *pPlayer = UTIL_GetNearestPlayer(GetAbsOrigin());
-		Vector vecOrigin = pPlayer->GetAbsOrigin();
-		pEntity = gEntList.FindEntityByClassnameNearest( "item_suit", vecOrigin, 0);
+#endif
+		if ( !pSpot )
+		{
+			pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start" );
 
-
-		if (pEntity != NULL)
-		{
-		vecOrigin = pEntity->GetAbsOrigin();
-		pEntity = gEntList.FindEntityByClassnameNearest( "info_player_start", vecOrigin, 0);
-		pSpot = pEntity;
-		pSpawnpointName = "info_player_start";
-		goto ReturnSpot;
+			if ( pSpot )
+				goto ReturnSpot;
 		}
-		else
-		{
-		pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start");
-		}
-	}
-	else if( !Q_strnicmp( szMapName, "d1_trainstation_05", 18 ) )
-	{
-		CBaseEntity *pEntity = NULL;
-		CBasePlayer *pPlayer = UTIL_GetNearestPlayer(GetAbsOrigin());
-		Vector vecOrigin = pPlayer->GetAbsOrigin();
-		pEntity = gEntList.FindEntityByClassnameNearest( "npc_alyx", vecOrigin, 0);
-		if (pEntity != NULL)
-		{
-		vecOrigin = pEntity->GetAbsOrigin();
-		pEntity = gEntList.FindEntityByClassnameNearest( "info_player_start", vecOrigin, 0);
-		pSpot = pEntity;
-		pSpawnpointName = "info_player_start";
-		goto ReturnSpot;
-		}
-		else
-		{
-		pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start");
-		}
+#ifdef SDK2013CE
 	}
 	else
 	{
-	pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start");
+		pSpot = gEntList.FindEntityByName( NULL, gpGlobals->startspot );
+		if ( pSpot )
+			goto ReturnSpot;
 	}
-#else
-	pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start");
 #endif
-}
-
-	if (pSpot)
-	{
-		goto ReturnSpot;
-	}
 
 ReturnSpot:
 
@@ -1899,6 +1752,7 @@ ReturnSpot:
 	m_flSlamProtectTime = gpGlobals->curtime + 0.5;
 
 	return pSpot;
+#endif
 } 
 
 

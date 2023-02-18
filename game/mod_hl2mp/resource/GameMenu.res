@@ -18,47 +18,59 @@
 		"command" "OpenPlayerListDialog"
 		"OnlyInGame" "1"
 	}
-	"4"
+	"5"	
 	{
-		"label" ""
-		"command" ""
+		"label" "#GameUI_GameMenu_NewGame"
+		"command" "OpenNewGameDialog"
+		"notmulti" "1"
+	}
+	"6"
+	{
+		"label" "#GameUI_GameMenu_LoadGame"
+		"command" "OpenLoadGameDialog"
+		"notmulti" "1"
+	}
+	"7"
+	{
+		"label" "#GameUI_GameMenu_SaveGame"
+		"command" "OpenSaveGameDialog"
+		"notmulti" "1"
 		"OnlyInGame" "1"
 	}
-	"5"
+	"8"
+	{
+		"label"	"#GameUI_LoadCommentary"
+		"command" "OpenLoadSingleplayerCommentaryDialog"
+	}
+	"9"
 	{
 		"label" "#GameUI_GameMenu_FindServers"
 		"command" "OpenServerBrowser"
 	}
-	"6"
+	"10"
 	{
 		"label" "#GameUI_GameMenu_CreateServer"
 		"command" "OpenCreateMultiplayerGameDialog"
 	}
-	"7"
+	"11"
 	{
-		"label" "#GameUI_GameMenu_ActivateVR"
-		"command" "engine vr_activate"
-		"InGameOrder" "40"
-		"OnlyWhenVREnabled" "1"
-		"OnlyWhenVRInactive" "1"
+		"label" "#GameUI_GameMenu_Achievements"
+		"command" "OpenAchievementsDialog"
 	}
-	"8"
+	"12"
 	{
-		"label" "#GameUI_GameMenu_DeactivateVR"
-		"command" "engine vr_deactivate"
-		"InGameOrder" "40"
-		"OnlyWhenVREnabled" "1"
-		"OnlyWhenVRActive" "1"
+		"label" "#GameUI_Controller"
+		"command" "OpenControllerDialog"
+		"ConsoleOnly" "1"
 	}
-	"10"
+	"13"
 	{
 		"label" "#GameUI_GameMenu_Options"
 		"command" "OpenOptionsDialog"
 	}
-	"11"
+	"14"
 	{
 		"label" "#GameUI_GameMenu_Quit"
 		"command" "Quit"
 	}
 }
-

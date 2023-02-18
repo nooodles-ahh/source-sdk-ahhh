@@ -1895,9 +1895,7 @@ Vector CWeaponRPG::GetLaserPosition( void )
 	return vec3_origin;
 }
 
-#ifdef SM_AI_FIXES
-#ifndef CLIENT_DLL 
-#endif //SM_AI_FIXES
+
 //-----------------------------------------------------------------------------
 // Purpose: NPC RPG users cheat and directly set the laser pointer's origin
 // Input  : &vecTarget - 
@@ -1944,9 +1942,6 @@ const Vector &CWeaponRPG::GetNPCLaserPosition( void )
 #endif //SM_AI_FIXES
 }
 
-#ifdef SM_AI_FIXES
-#endif //
-#endif //SM_AI_FIXES
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Output : Returns true if the rocket is being guided, false if it's dumb

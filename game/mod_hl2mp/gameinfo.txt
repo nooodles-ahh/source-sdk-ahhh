@@ -3,7 +3,6 @@
 	game	"My First HL2MP Mod"
 	title	"HALF+LIFE'"
 	title2	"deathmatch mod"
-	type multiplayer_only
 	nomodels 0
 	nohimodel 1
 	nocrosshair 1
