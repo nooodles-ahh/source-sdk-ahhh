@@ -126,12 +126,22 @@ protected:
 		{
 			CBaseEntity *pThrower = pGrenade->GetThrower();
 			CBaseEntity *pOriginalThrower = pGrenade->GetOriginalThrower();
+
+		#ifndef SM_SP_FIXES
 			CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+		#endif
 			// check if player was most recent thrower, but the victim was the original thrower
+		#ifdef SM_SP_FIXES
+			if ( pThrower->IsPlayer() && ( pOriginalThrower == pVictim ) )
+			{
+				IncrementCount();
+			}	
+		#else
 			if ( ( pPlayer == pThrower ) && ( pOriginalThrower == pVictim ) )
 			{
 				IncrementCount();
 			}				
+		#endif
 		}			
 	}
 };

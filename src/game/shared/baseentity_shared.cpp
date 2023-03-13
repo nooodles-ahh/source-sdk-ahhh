@@ -1610,7 +1610,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	
 	bool bDoServerEffects = true;
 
-#if defined( HL2MP ) && defined( GAME_DLL )
+#if defined( HL2MP ) && defined( GAME_DLL ) && !defined(SM_SP_FIXES)
 	bDoServerEffects = false;
 #endif
 
@@ -2047,7 +2047,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 bool CBaseEntity::ShouldDrawUnderwaterBulletBubbles()
 {
 #if defined( HL2_DLL ) && defined( GAME_DLL )
+#ifdef SM_AI_FIXES
+	CBaseEntity *pPlayer = UTIL_GetNearestVisiblePlayer(this); 
+#else
 	CBaseEntity *pPlayer = ( gpGlobals->maxClients == 1 ) ? UTIL_GetLocalPlayer() : NULL;
+#endif
 	return pPlayer && (pPlayer->GetWaterLevel() == 3);
 #else
 	return false;
@@ -2553,7 +2557,7 @@ bool CBaseEntity::IsSimulatingOnAlternateTicks()
 	{
 		return false;
 	}
-
+	
 	return sv_alternateticks.GetBool();
 }
 

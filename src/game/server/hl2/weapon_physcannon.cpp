@@ -1457,7 +1457,11 @@ enum
 //-----------------------------------------------------------------------------
 bool PlayerHasMegaPhysCannon()
 {
+#ifdef SM_SP_FIXES
+	return ( HL2MPRules()->MegaPhyscannonActive() == true );
+#else
 	return ( HL2GameRules()->MegaPhyscannonActive() == true );
+#endif
 }
 
 
@@ -2747,7 +2751,11 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 	QAngle playerAngles = pPlayer->EyeAngles();
 	AngleVectors( playerAngles, &forward, &right, &up );
 
+#ifdef SM_SP_FIXES
+	if ( HL2MPRules()->MegaPhyscannonActive() )
+#else
 	if ( HL2GameRules()->MegaPhyscannonActive() )
+#endif
 	{
 		Vector los = ( pEntity->WorldSpaceCenter() - pPlayer->Weapon_ShootPosition() );
 		VectorNormalize( los );

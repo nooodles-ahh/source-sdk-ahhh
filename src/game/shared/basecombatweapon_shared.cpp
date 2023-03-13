@@ -1033,7 +1033,10 @@ void CBaseCombatWeapon::SetActivity( Activity act, float duration )
 		sequence = SelectWeightedSequence( ACT_VM_IDLE );
 
 	//Adrian: Oh man again...
-#if !defined( CLIENT_DLL ) && (defined( HL2MP ) || defined( PORTAL ))
+#if !defined( CLIENT_DLL ) && (defined( HL2MP ) || defined( PORTAL ) || defined( SDK_DLL ) )
+	#ifdef SM_AI_FIXES
+		if ( GetOwner()->IsPlayer() ) 
+	#endif
 	SetModel( GetViewModel() );
 #endif
 

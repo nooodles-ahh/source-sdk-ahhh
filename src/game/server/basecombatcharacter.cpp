@@ -48,6 +48,9 @@
 #include "hl2_gamerules.h"
 #endif
 
+#ifdef SM_AI_FIXES
+#include "hl2mp_gamerules.h"
+#endif
 #ifdef PORTAL
 	#include "portal_util_shared.h"
 	#include "prop_portal_shared.h"
@@ -1531,7 +1534,11 @@ bool CBaseCombatCharacter::BecomeRagdoll( const CTakeDamageInfo &info, const Vec
 
 #ifdef HL2_EPISODIC
 	// Burning corpses are server-side in episodic, if we're in darkness mode
+#ifdef SM_AI_FIXES
+	if (IsOnFire() && HL2MPRules()->IsAlyxInDarknessMode())
+#else
 	if ( IsOnFire() && HL2GameRules()->IsAlyxInDarknessMode() )
+#endif
 	{
 		CBaseEntity *pRagdoll = CreateServerRagdoll( this, m_nForceBone, newinfo, COLLISION_GROUP_DEBRIS );
 		FixupBurningServerRagdoll( pRagdoll );
@@ -1546,6 +1553,10 @@ bool CBaseCombatCharacter::BecomeRagdoll( const CTakeDamageInfo &info, const Vec
 #if !defined( HL2MP )
 	bMegaPhyscannonActive = HL2GameRules()->MegaPhyscannonActive();
 #endif // !HL2MP
+
+#if defined( SM_SP_FIXES )
+	bMegaPhyscannonActive = HL2MPRules()->MegaPhyscannonActive();
+#endif
 
 	// Mega physgun requires everything to be a server-side ragdoll
 	if ( m_bForceServerRagdoll == true || ( ( bMegaPhyscannonActive == true ) && !IsPlayer() && Classify() != CLASS_PLAYER_ALLY_VITAL && Classify() != CLASS_PLAYER_ALLY ) )
@@ -2134,10 +2145,10 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 		{
 			m_hActiveWeapon->Holster();
 			// FIXME: isn't this handeled by the weapon?
-			m_hActiveWeapon->AddEffects( EF_NODRAW );
+			m_hActiveWeapon->AddEffects( EF_NODRAW | EF_NOSHADOW );
 		}
 		SetActiveWeapon( pWeapon );
-		m_hActiveWeapon->RemoveEffects( EF_NODRAW );
+		m_hActiveWeapon->RemoveEffects( EF_NODRAW | EF_NOSHADOW );
 
 	}
 	
@@ -3102,8 +3113,13 @@ void CBaseCombatCharacter::VPhysicsShadowCollision( int index, gamevcollisioneve
 	// which can occur owing to ordering issues it appears.
 	float flOtherAttackerTime = 0.0f;
 
-#if defined( HL2_DLL ) && !defined( HL2MP )
+
+#if defined( HL2_DLL ) && (!defined( HL2MP ) || defined(SM_SP_FIXES))
+#if defined(SM_SP_FIXES)
+	if ( HL2MPRules()->MegaPhyscannonActive() == true )
+#else
 	if ( HL2GameRules()->MegaPhyscannonActive() == true )
+#endif
 	{
 		flOtherAttackerTime = 1.0f;
 	}

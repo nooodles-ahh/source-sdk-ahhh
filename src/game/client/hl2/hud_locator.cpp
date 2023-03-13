@@ -128,8 +128,10 @@ bool CHudLocator::ShouldDraw( void )
 	if( pPlayer->GetVehicle() )
 		return false;
 
+#ifdef HL2_EPISODIC
 	if( pPlayer->m_HL2Local.m_vecLocatorOrigin == vec3_invalid )
 		return false;
+#endif
 	
 	return true;
 }

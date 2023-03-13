@@ -302,6 +302,10 @@ public:
 	virtual void	Init( void );
 	virtual void	Shutdown( void );
 
+#ifdef SM_SP_FIXES
+	virtual void    MP_PostSimulate();
+#endif
+
 	const CViewSetup *GetPlayerViewSetup( ) const;
 
 	virtual void	StartPitchDrift( void );

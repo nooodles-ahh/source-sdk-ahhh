@@ -863,7 +863,9 @@ void CAI_PassengerBehavior::DetachFromVehicle( void )
 	GetOuter()->AddFlag( FL_FLY );
 	GetOuter()->SetGroundEntity( NULL );
 	GetOuter()->SetCollisionGroup( COLLISION_GROUP_NPC );
+#ifdef HL2_EPISODIC
 	m_hVehicle->RemovePhysicsChild( GetOuter() );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -888,8 +890,10 @@ void CAI_PassengerBehavior::AttachToVehicle( void )
 	// Set our destination target
 	GetEntryTarget( &m_vecTargetPosition, &m_vecTargetAngles );
 
+#ifdef HL2_EPISODIC
 	// Get physics messages from our attached physics object
 	m_hVehicle->AddPhysicsChild( GetOuter() );
+#endif
 }
 
 //-----------------------------------------------------------------------------

@@ -349,12 +349,20 @@ void CGameText::Display( CBaseEntity *pActivator )
 	if ( !CanFireForActivator( pActivator ) )
 		return;
 
+#ifdef SM_AI_FIXES
+		// also send to all if we haven't got a specific activator player to send to 
+		if ( MessageToAll() || !pActivator || !pActivator->IsPlayer() ) 
+#else
 	if ( MessageToAll() )
+#endif
 	{
 		UTIL_HudMessageAll( m_textParms, MessageGet() );
 	}
 	else
 	{
+#ifdef SM_AI_FIXES
+		UTIL_HudMessage( ToBasePlayer( pActivator ), m_textParms, MessageGet() );
+#else
 		// If we're in singleplayer, show the message to the player.
 		if ( gpGlobals->maxClients == 1 )
 		{
@@ -366,6 +374,7 @@ void CGameText::Display( CBaseEntity *pActivator )
 		{
 			UTIL_HudMessage( ToBasePlayer( pActivator ), m_textParms, MessageGet() );
 		}
+#endif
 	}
 }
 

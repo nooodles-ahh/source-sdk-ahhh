@@ -34,6 +34,10 @@ public:
 	DECLARE_NETWORKCLASS(); 
 	DECLARE_PREDICTABLE();
 
+#if defined(SM_AI_FIXES) && !defined(CLIENT_DLL)
+	int		CapabilitiesGet( void ) { return bits_CAP_WEAPON_MELEE_ATTACK1; }
+#endif
+	
 	virtual	void	Spawn( void );
 	virtual	void	Precache( void );
 	

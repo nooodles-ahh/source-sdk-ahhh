@@ -106,6 +106,9 @@ acttable_t	CWeaponFrag::m_acttable[] =
 	{ ACT_MP_RELOAD_CROUCH,				ACT_HL2MP_GESTURE_RELOAD_GRENADE,		false },
 
 	{ ACT_MP_JUMP,						ACT_HL2MP_JUMP_GRENADE,					false },
+#ifdef SM_AI_FIXES
+	{ ACT_RANGE_ATTACK1,				ACT_RANGE_ATTACK_SLAM,					true }, 
+#endif
 #else
 	{ ACT_HL2MP_IDLE,					ACT_HL2MP_IDLE_GRENADE,					false },
 	{ ACT_HL2MP_RUN,					ACT_HL2MP_RUN_GRENADE,					false },
@@ -215,6 +218,24 @@ void CWeaponFrag::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 		m_flNextPrimaryAttack	= gpGlobals->curtime + RETHROW_DELAY;
 		m_flNextSecondaryAttack	= gpGlobals->curtime + RETHROW_DELAY;
 		m_flTimeWeaponIdle = FLT_MAX; //NOTE: This is set once the animation has finished up!
+#ifdef SM_AI_FIXES		
+		// Make a sound designed to scare snipers back into their holes!
+		CBaseCombatCharacter *pOwner = GetOwner();
+
+		if( pOwner )
+		{
+			Vector vecSrc = pOwner->Weapon_ShootPosition();
+			Vector	vecDir;
+
+			AngleVectors( pOwner->EyeAngles(), &vecDir );
+
+			trace_t tr;
+
+			UTIL_TraceLine( vecSrc, vecSrc + vecDir * 1024, MASK_SOLID_BRUSHONLY, pOwner, COLLISION_GROUP_NONE, &tr );
+
+			CSoundEnt::InsertSound( SOUND_DANGER_SNIPERONLY, tr.endpos, 384, 0.2, pOwner );
+		}
+#endif
 	}
 }
 

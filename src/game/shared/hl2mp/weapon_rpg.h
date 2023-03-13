@@ -37,6 +37,10 @@ class CMissile : public CBaseCombatCharacter
 	DECLARE_CLASS( CMissile, CBaseCombatCharacter );
 
 public:
+#ifdef SM_AI_FIXES
+	static const int EXPLOSION_RADIUS = 200; 
+	static const int EXPLOSION_DAMAGE = 200; 
+#endif
 	CMissile();
 	~CMissile();
 
@@ -70,6 +74,12 @@ public:
 
 	static CMissile *Create( const Vector &vecOrigin, const QAngle &vecAngles, edict_t *pentOwner );
 
+#ifdef SM_AI_FIXES
+	void CreateDangerSounds( bool bState ){ m_bCreateDangerSounds = bState; } 		
+	static void AddCustomDetonator( CBaseEntity *pEntity, float radius, float height = -1 );
+	static void RemoveCustomDetonator( CBaseEntity *pEntity );
+#endif
+
 protected:
 	virtual void DoExplosion();	
 	virtual void ComputeActualDotPosition( CLaserDot *pLaserDot, Vector *pActualDotPosition, float *pHomingSpeed );
@@ -85,9 +95,22 @@ protected:
 	float					m_flAugerTime;		// Amount of time to auger before blowing up anyway
 	float					m_flMarkDeadTime;
 	float					m_flDamage;
+#ifdef SM_AI_FIXES
+	struct CustomDetonator_t 
+	{ 
+		EHANDLE hEntity; 
+		float radiusSq; 
+		float halfHeight; 
+	}; 
+
+	static CUtlVector<CustomDetonator_t> gm_CustomDetonators; 
+#endif
 
 private:
 	float					m_flGracePeriodEndsAt;
+#ifdef SM_AI_FIXES
+	bool					m_bCreateDangerSounds; 
+#endif
 
 	DECLARE_DATADESC();
 };
@@ -124,6 +147,9 @@ public:
 
 	void	AimAtSpecificTarget( CBaseEntity *pTarget );
 	void	SetGuidanceHint( const char *pHintName );
+#ifdef SM_AI_FIXES
+	void	APCSeekThink( void ); 
+#endif
 
 	CAPCMissile			*m_pNext;
 
@@ -198,6 +224,13 @@ public:
 	int		GetMaxBurst() { return 1; }
 	float	GetMinRestTime() { return 4.0; }
 	float	GetMaxRestTime() { return 4.0; }
+#ifdef SM_AI_FIXES
+	#ifndef CLIENT_DLL 
+	bool	WeaponLOSCondition( const Vector &ownerPos, const Vector &targetPos, bool bSetConditions ); 
+	int		WeaponRangeAttack1Condition( float flDot, float flDist ); 
+	void	Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator ); 
+	#endif 
+#endif
 
 	void	StartGuiding( void );
 	void	StopGuiding( void );
@@ -213,8 +246,20 @@ public:
 	void	CreateLaserPointer( void );
 	void	UpdateLaserPosition( Vector vecMuzzlePos = vec3_origin, Vector vecEndPos = vec3_origin );
 	Vector	GetLaserPosition( void );
+#ifdef SM_AI_FIXES
+	#ifndef CLIENT_DLL 
 
 	// NPC RPG users cheat and directly set the laser pointer's origin
+	
+	int		CapabilitiesGet( void ) { return bits_CAP_WEAPON_RANGE_ATTACK1; } 
+#endif 
+	virtual const Vector& GetBulletSpread( void ) 
+	{ 
+		static Vector cone = VECTOR_CONE_3DEGREES; 
+		return cone; 
+	} 
+#endif
+	
 	void	UpdateNPCLaserPosition( const Vector &vecTarget );
 	void	SetNPCLaserPosition( const Vector &vecTarget );
 	const Vector &GetNPCLaserPosition( void );

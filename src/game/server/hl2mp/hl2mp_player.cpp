@@ -24,6 +24,10 @@
 #include "tier0/vprof.h"
 #include "bone_setup.h"
 #endif // SDK2013CE
+#ifdef SecobMod__SAVERESTORE
+#include "filesystem.h"
+#include "ammodef.h"
+#endif //SecobMod__SAVERESTORE
 
 #include "engine/IEngineSound.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
@@ -35,6 +39,12 @@
 #include "tier0/memdbgon.h"
 #endif // SDK2013CE
 
+#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+Vector respawn_origin;
+Vector pEntityOrigin;
+ConVar sv_SecobMod__increment_killed("sv_SecobMod__increment_killed", "0", 0, "The level of Increment Killed as a convar.");
+int PlayerDucking;
+#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
 int g_iLastCitizenModel = 0;
 int g_iLastCombineModel = 0;
 
@@ -322,6 +332,10 @@ void CHL2MP_Player::GiveDefaultItems( void )
 	GiveNamedItem( "weapon_smg1" );
 	GiveNamedItem( "weapon_frag" );
 	GiveNamedItem( "weapon_physcannon" );
+	
+	//SecobMod__Information: Still provide armour for a non-playerclass player.
+	SetArmorValue(100);
+	SetMaxArmorValue(200);
 
 	const char *szDefaultWeaponName = engine->GetClientConVarValue( engine->IndexOfEdict( edict() ), "cl_defaultweapon" );
 
@@ -387,26 +401,151 @@ void CHL2MP_Player::PickDefaultSpawnTeam( void )
 	}
 }
 
+#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+//------------------------------------------------------------------------------
+// A small wrapper around SV_Move that never clips against the supplied entity.
+//------------------------------------------------------------------------------
+static bool TestEntityPosition ( CBasePlayer *pPlayer )
+{	
+	trace_t	trace;
+	UTIL_TraceEntity( pPlayer, pPlayer->GetAbsOrigin(), pPlayer->GetAbsOrigin(), MASK_PLAYERSOLID, &trace );
+	return (trace.startsolid == 0);
+}
+
+static int FindPassableSpace( CBasePlayer *pPlayer, const Vector& direction, float step, Vector& oldorigin )
+{
+	int i;
+	for ( i = 0; i < 100; i++ )
+	{
+		Vector origin = pPlayer->GetAbsOrigin();
+		VectorMA( origin, step, direction, origin );
+		pPlayer->SetAbsOrigin( origin );
+		if ( TestEntityPosition( pPlayer ) )
+		{
+			VectorCopy( pPlayer->GetAbsOrigin(), oldorigin );
+			return 1;
+		}
+	}
+	return 0;
+}
+#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+
 //-----------------------------------------------------------------------------
 // Purpose: Sets HL2 specific defaults.
 //-----------------------------------------------------------------------------
 void CHL2MP_Player::Spawn(void)
 {
+#ifdef SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+	if ( m_bTransition )
+	{
+		if ( m_bTransitionTeleported )
+			g_pGameRules->GetPlayerSpawnSpot( this );
+
+		m_bTransition = false;
+		m_bTransitionTeleported = false;
+
+		return;
+	}	
+#endif //SecobMod__MULTIPLAYER_LEVEL_TRANSITIONS
+
 	m_flNextModelChangeTime = 0.0f;
 	m_flNextTeamChangeTime = 0.0f;
 
-	PickDefaultSpawnTeam();
+	//PickDefaultSpawnTeam();
 
 	BaseClass::Spawn();
 	
 	if ( !IsObserver() )
 	{
+#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+	// Disengage from hierarchy
+	SetParent( NULL );
+	SetMoveType( MOVETYPE_NOCLIP );
+	AddEFlags( EFL_NOCLIP_ACTIVE );
+
+	//SecobMod__Information: Just in case our dynamic respawn code is going to spawn us in world geometery, or even a player or NPC, run these checks so if we are stuck we get moved to a good location to spawn.
+	CPlayerState *pl2 = PlayerData();
+		Assert( pl2 );
+
+	RemoveEFlags( EFL_NOCLIP_ACTIVE );
+	SetMoveType( MOVETYPE_WALK );
+
+	Vector oldorigin = GetAbsOrigin();
+	if ( !TestEntityPosition( this ) )
+	{
+		Vector forward, right, up;
+
+		AngleVectors ( pl2->v_angle, &forward, &right, &up);
+		
+		// Try to move into the world
+		if ( !FindPassableSpace( this, forward, 1, oldorigin ) )
+		{
+			if ( !FindPassableSpace( this, right, 1, oldorigin ) )
+			{
+				if ( !FindPassableSpace( this, right, -1, oldorigin ) )		// left
+				{
+					if ( !FindPassableSpace( this, up, 1, oldorigin ) )	// up
+					{
+						if ( !FindPassableSpace( this, up, -1, oldorigin ) )	// down
+						{
+							if ( !FindPassableSpace( this, forward, -1, oldorigin ) )	// back
+							{
+							//Coudln't find the world, so we kill the player. In  some cases this is because of collision bugs when a player should be crouched but isnt.
+							// we therefore set the player to be ducked before killing them, so that our PlayerDucking check can take care of fixing their spawn point automatically.
+							// and we hope that the players next attempt at spawning is more successful than their last attempt.
+							AddFlag(FL_ONGROUND); // set the player on the ground at the start of the round.
+							SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
+							AddFlag(FL_DUCKING);
+							m_Local.m_bDucked = true;
+							m_Local.m_bDucking = false;
+							CommitSuicide();
+							}
+						}
+					}
+				}
+			}
+		}	
+		SetAbsOrigin( oldorigin );
+	}
+
+	//SecobMod__Information: Very rarely a player may still spawn in another player, this rarely happens, so as a fix we kill the player we're about to spawn on. We do at least warn them that they should move first.
+	int MovedYet = 0;
+
+	LoopSpot:
+	CBaseEntity *ent = NULL;
+		for ( CEntitySphereQuery sphere( GetAbsOrigin(), 0.1 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
+		{
+			if ( ent->IsPlayer() && ent!=(this) )
+			{
+			AddFlag(FL_ONGROUND); // set the player on the ground at the start of the round.
+			
+				if (MovedYet == 0)
+				{
+				UTIL_ClientPrintAll( HUD_PRINTCENTER, "#BLOCKING_SPAWN");
+				}
+				MovedYet ++;	
+			
+					if (MovedYet >= 6)
+					{
+					//SecobMod__Information: We gave them a chance to move, they didn't take it so now we spawn the player and kill the other one.
+					ent->TakeDamage( CTakeDamageInfo( GetContainingEntity(INDEXENT(0)), GetContainingEntity(INDEXENT(0)), 3000, DMG_GENERIC ) );
+					}
+					else
+					{
+					goto LoopSpot; //SecobMod__Information: We loop through the code until either there's no one in our way, or 6 (or more) calls have been made, in which case we kill the offending player.
+					}
+			}
+		MovedYet = 0;
+		}
+#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE	
+	   
 		pl.deadflag = false;
 		RemoveSolidFlags( FSOLID_NOT_SOLID );
 
 		RemoveEffects( EF_NODRAW );
 		
-		GiveDefaultItems();
+		if( gpGlobals->maxClients > 1 && gpGlobals->deathmatch )
+			GiveDefaultItems();
 	}
 
 #ifndef SDK2013CE
@@ -751,7 +890,16 @@ void CHL2MP_Player::NoteWeaponFired( void )
 }
 
 extern ConVar sv_maxunlag;
-
+#ifdef SM_AI_FIXES
+bool CHL2MP_Player::WantsLagCompensationOnEntity( const CBaseEntity *pEntity, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const 
+{
+	// No need to lag compensate at all if we're not attacking in this command and
+	// we haven't attacked recently.
+	if ( !( pCmd->buttons & IN_ATTACK ) && (pCmd->command_number - m_iLastWeaponFireUsercmd > 5) )
+		return false;
+	return BaseClass::WantsLagCompensationOnEntity( pEntity, pCmd, pEntityTransmitBits ); 
+}
+#else
 bool CHL2MP_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
 {
 	// No need to lag compensate at all if we're not attacking in this command and
@@ -787,6 +935,7 @@ bool CHL2MP_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, co
 
 	return true;
 }
+#endif
 
 Activity CHL2MP_Player::TranslateTeamActivity( Activity ActToTranslate )
 {
@@ -1020,6 +1169,10 @@ bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 
 	pWeapon->CheckRespawn();
+#ifdef SDK2013CE
+	pWeapon->AddSolidFlags( FSOLID_NOT_SOLID );
+	pWeapon->AddEffects( EF_NODRAW );
+#endif
 	Weapon_Equip( pWeapon );
 
 	return true;
@@ -1366,9 +1519,35 @@ void CHL2MP_Player::Event_Killed( const CTakeDamageInfo &info )
 	SetNumAnimOverlays( 0 );
 #endif // !SDK2013CE
 
+#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+	sv_SecobMod__increment_killed.SetValue(sv_SecobMod__increment_killed.GetInt()+1);
+#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+
 	// Note: since we're dead, it won't draw us on the client, but we don't set EF_NODRAW
 	// because we still want to transmit to the clients in our PVS.
 	CreateRagdollEntity();
+
+#ifdef SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
+	//SecobMod__Information: When a player is killed and if there's a ragdoll (there always is, even if it gets removed instantly) then we either get the position of our next (other) nearest player (because GetNearestPlayer would return ourselves) and set it to be the vector labelled respawn_origin or we just use the position of our ragdolls first spawn if no players are alive.
+	CBasePlayer *pPlayer = UTIL_GetOtherNearestPlayer(GetAbsOrigin());
+	if (m_hRagdoll)
+	{	
+		if (pPlayer == NULL || pPlayer == (this))
+			{
+			respawn_origin = m_hRagdoll->GetAbsOrigin();
+			}
+			else
+			{
+			respawn_origin = pPlayer->GetAbsOrigin();
+			}
+	}
+	
+	if ( GetFlags() & FL_DUCKING )
+	{
+	//We we're killed while ducking, this could be in a vent or enclosed area, so set an int so the dynamic respawn code can set you ducked on spawn.
+	PlayerDucking = 1;
+	}
+#endif //SecobMod__ENABLE_DYNAMIC_PLAYER_RESPAWN_CODE
 
 	DetonateTripmines();
 
@@ -1381,6 +1560,16 @@ void CHL2MP_Player::Event_Killed( const CTakeDamageInfo &info )
 			m_hRagdoll->GetBaseAnimating()->Dissolve( NULL, gpGlobals->curtime, false, ENTITY_DISSOLVE_NORMAL );
 		}
 	}
+
+#ifdef SecobMod__BARNACLES_CAN_SWALLOW_PLAYERS
+	if ( (info.GetDamageType() & (DMG_ALWAYSGIB|DMG_LASTGENERICFLAG|DMG_CRUSH)) == (DMG_ALWAYSGIB|DMG_LASTGENERICFLAG|DMG_CRUSH) )
+	{
+		if ( m_hRagdoll )
+		{
+			UTIL_RemoveImmediate( m_hRagdoll );	
+		}
+	}
+#endif
 
 	CBaseEntity *pAttacker = info.GetAttacker();
 
@@ -1449,8 +1638,11 @@ void CHL2MP_Player::DeathSound( const CTakeDamageInfo &info )
 	EmitSound( filter, entindex(), ep );
 }
 
+
 CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 {
+	return BaseClass::EntSelectSpawnPoint();
+#if 0
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
 	edict_t		*player = edict();
@@ -1518,14 +1710,28 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 		}
 		goto ReturnSpot;
 	}
-
-	if ( !pSpot  )
+	
+#ifdef SDK2013CE
+	// If startspot is set, (re)spawn there.
+	if ( !gpGlobals->startspot || !strlen( STRING( gpGlobals->startspot ) ) )
 	{
-		pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start" );
+#endif
+		if ( !pSpot )
+		{
+			pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start" );
 
+			if ( pSpot )
+				goto ReturnSpot;
+		}
+#ifdef SDK2013CE
+	}
+	else
+	{
+		pSpot = gEntList.FindEntityByName( NULL, gpGlobals->startspot );
 		if ( pSpot )
 			goto ReturnSpot;
 	}
+#endif
 
 ReturnSpot:
 
@@ -1546,6 +1752,7 @@ ReturnSpot:
 	m_flSlamProtectTime = gpGlobals->curtime + 0.5;
 
 	return pSpot;
+#endif
 } 
 
 
@@ -1588,7 +1795,6 @@ CON_COMMAND( timeleft, "prints the time remaining in the match" )
 		}
 	}	
 }
-
 
 void CHL2MP_Player::Reset()
 {	
@@ -1904,3 +2110,206 @@ void CHL2MP_Player::SetupBones( matrix3x4_t *pBoneToWorld, int boneMask )
 		boneMask );
 }
 #endif // SDK2013CE
+
+
+void CHL2MP_Player::SetArmorValue( int value )
+{
+BaseClass::SetArmorValue(value);
+	m_iArmor = value;
+}
+
+
+// Armour Settings.
+void CHL2MP_Player::SetMaxArmorValue( int MaxArmorValue )
+{
+	m_iMaxArmor = MaxArmorValue;
+}
+
+//-----------------------------------------------------------------------------
+void CHL2MP_Player::IncrementArmorValue( int nCount, int nMaxValue )
+{ 
+nMaxValue = m_iMaxArmor;
+BaseClass::IncrementArmorValue(nCount, nMaxValue );
+}	
+ 
+ 
+#ifdef SecobMod__SAVERESTORE
+void CHL2MP_Player::SaveTransitionFile(void)
+{
+	FileHandle_t hFile = g_pFullFileSystem->Open( "transition.cfg", "w" );
+
+	if ( hFile == FILESYSTEM_INVALID_HANDLE )
+	{
+	Warning("Invalid filesystem handle \n");
+	CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
+	g_pFullFileSystem->WriteFile( "cfg/transition.cfg", "MOD", buf );
+	return;
+	}
+	else
+	{
+	// Iterate all active players
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	{
+		CHL2MP_Player *pPlayerMP = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
+		if (pPlayerMP == NULL)
+		{
+			//SecobMod__Information: If we're a listen server then the host is both a server and a client. As a server they return NULL so we return 
+			g_pFullFileSystem->Close( hFile );
+			return;
+		}
+		int HealthValue = pPlayerMP->m_iHealth;
+		int ArmourValue = pPlayerMP->m_iArmor;
+		int WeaponSlot = 0;
+	
+	
+		//Set the weapon slot back to 0 for cleanliness and ease of use in hl2mp_client.cpps restore code.
+		WeaponSlot = 0;
+		Msg("Saving cfg file...\n");	
+		//Get this persons steam ID.
+		//Also write on a new line a { and use the SteamID as our heading!.
+		char tmpSteamid[32];
+		Q_snprintf(tmpSteamid,sizeof(tmpSteamid), "\"%s\"\n""{\n",engine->GetPlayerNetworkIDString(pPlayerMP->edict()));
+		
+		//Write this persons steam ID to our file.
+		g_pFullFileSystem->Write( &tmpSteamid, strlen(tmpSteamid), hFile );
+		
+		//Get their Health
+		char data3[32];
+		Q_snprintf( data3,sizeof(data3), "\"Health" "\" ");
+		char data4[32];
+		Q_snprintf(data4,sizeof(data4), "\"%i\"\n", HealthValue);
+		//Write this persons Health to the file.
+		g_pFullFileSystem->Write( &data3, strlen(data3), hFile );
+		g_pFullFileSystem->Write( &data4, strlen(data4), hFile );
+		
+		//Get their Armour
+		char data5[32];
+		Q_snprintf( data5,sizeof(data5), "\"Armour" "\" ");
+		char data6[32];
+		Q_snprintf(data6,sizeof(data6), "\"%i\"\n", ArmourValue);
+		//Write this persons Armour to the file.
+		g_pFullFileSystem->Write( &data5, strlen(data5), hFile );
+		g_pFullFileSystem->Write( &data6, strlen(data6), hFile );
+
+		
+		//Go through the players inventory to find out their weapons and ammo.
+		CBaseCombatWeapon *pCheck;
+		
+		//This is our player. This is set because currently this section is in TakeDamage of hl2mp_player.cpp
+		CBasePlayer *pPlayer = ToBasePlayer(pPlayerMP);
+		const char *weaponName = "";
+		weaponName = pPlayer->GetActiveWeapon()->GetClassname();
+		
+		//Get their current weapon so we can attempt to switch to it on spawning.
+		char ActiveWepPre[32];
+		Q_snprintf(ActiveWepPre,sizeof(ActiveWepPre), "\n""\"ActiveWeapon\" ");
+		//Write our weapon.
+		g_pFullFileSystem->Write( &ActiveWepPre, strlen(ActiveWepPre), hFile );
+		char ActiveWep[32];
+		Q_snprintf(ActiveWep,sizeof(ActiveWep), "\"%s\"\n", weaponName);
+		//Write our weapon.
+		g_pFullFileSystem->Write( &ActiveWep, strlen(ActiveWep), hFile );
+		
+	
+		for ( int i = 0 ; i < WeaponCount(); ++i )
+		{
+			pCheck = GetWeapon( i );
+			if ( !pCheck )
+				continue;
+			
+			//Create a temporary int for both primary and secondary clip ammo counts.
+			int TempPrimaryClip = pPlayer->GetAmmoCount( pCheck->GetPrimaryAmmoType());
+			int TempSecondaryClip = pPlayer->GetAmmoCount( pCheck->GetSecondaryAmmoType());
+			
+			//Creaye a temporary int for both primary and seconday clip ammo TYPES.
+			int ammoIndex_Pri = pCheck->GetPrimaryAmmoType();
+			int ammoIndex_Sec = pCheck->GetSecondaryAmmoType();
+
+			int ammoPrimaryClipLeft = pCheck->Clip1();
+			int ammoSecondaryClipLeft = pCheck->Clip2();
+			
+			//Get out weapons classname and get our text set up.
+			char pCheckWep[32];
+			Q_snprintf(pCheckWep,sizeof(pCheckWep), "\n\"Weapon_%i\" \"%s\"\n", WeaponSlot,pCheck->GetClassname());
+			//Write our weapon.
+			g_pFullFileSystem->Write( &pCheckWep, strlen(pCheckWep), hFile );
+		
+				if (TempPrimaryClip >= 1)
+				{	
+				//Get out weapons primary clip and get our text set up.
+				char PrimaryClip[32];
+				Q_snprintf(PrimaryClip,sizeof(PrimaryClip), "\n\"Weapon_%i_PriClip\" \"%i\"\n", WeaponSlot,TempPrimaryClip);
+				//Now write our weapons primary clip count.
+				g_pFullFileSystem->Write( &PrimaryClip, strlen(PrimaryClip), hFile );
+					//Get out weapons primary clip ammo type.
+					if( ammoIndex_Pri != -1 )
+					{
+					char PrimaryWeaponClipAmmoType[32];
+					Q_snprintf(PrimaryWeaponClipAmmoType,sizeof(PrimaryWeaponClipAmmoType), "\"Weapon_%i_PriClipAmmo\" ", WeaponSlot);
+
+					char PrimaryClipAmmoType[32];
+					if (GetAmmoDef()->GetAmmoOfIndex(ammoIndex_Pri)->pName)
+					{
+						Q_snprintf(PrimaryClipAmmoType, sizeof(PrimaryClipAmmoType), "\"%s\"\n", GetAmmoDef()->GetAmmoOfIndex(ammoIndex_Pri)->pName);
+					}
+					else
+					{
+						Q_snprintf(PrimaryClipAmmoType, sizeof(PrimaryClipAmmoType), "\n");
+					}
+
+					char PrimaryClipAmmoLeft[32];
+					Q_snprintf(PrimaryClipAmmoLeft, sizeof(PrimaryClipAmmoLeft), "\"Weapon_%i_PriClipAmmoLeft\" \"%i\"\n", WeaponSlot, ammoPrimaryClipLeft);
+					//Now write our weapons primary clip count and how much of the clip is left.
+					g_pFullFileSystem->Write(&PrimaryWeaponClipAmmoType, strlen(PrimaryWeaponClipAmmoType), hFile);
+					g_pFullFileSystem->Write(&PrimaryClipAmmoType, strlen(PrimaryClipAmmoType), hFile);
+					g_pFullFileSystem->Write(&PrimaryClipAmmoLeft, strlen(PrimaryClipAmmoLeft), hFile);
+					}
+				}
+		
+				if (TempSecondaryClip >= 1)
+				{	
+				//Get out weapons secondary clip and get our text set up.
+				char SecondaryClip[32];
+				Q_snprintf(SecondaryClip,sizeof(SecondaryClip), "\n\"Weapon_%i_SecClip\" \"%i\"\n", WeaponSlot,TempSecondaryClip);
+				//Now write our weapons secondary clip count.
+				g_pFullFileSystem->Write( &SecondaryClip, strlen(SecondaryClip), hFile );
+					//Get out weapons secondary clip ammo type.
+					if( ammoIndex_Sec != -1 )
+					{
+					char SecondaryWeaponClipAmmoType[32];
+					Q_snprintf(SecondaryWeaponClipAmmoType,sizeof(SecondaryWeaponClipAmmoType), "\"Weapon_%i_SecClipAmmo\" ", WeaponSlot);
+
+					char SecondaryClipAmmoType[32];
+					if (GetAmmoDef()->GetAmmoOfIndex(ammoIndex_Pri)->pName)
+					{
+						Q_snprintf(SecondaryClipAmmoType, sizeof(SecondaryClipAmmoType), "\"%s\"\n", GetAmmoDef()->GetAmmoOfIndex(ammoIndex_Sec)->pName);
+					}
+					else
+					{
+						Q_snprintf(SecondaryClipAmmoType, sizeof(SecondaryClipAmmoType), "\n");
+					}
+
+					char SecondaryClipAmmoLeft[32];
+					Q_snprintf(SecondaryClipAmmoLeft, sizeof(SecondaryClipAmmoLeft), "\"Weapon_%i_SecClipAmmoLeft\" \"%i\"\n", WeaponSlot, ammoSecondaryClipLeft);
+					//Now write our weapons primary clip count.
+					g_pFullFileSystem->Write(&SecondaryWeaponClipAmmoType, strlen(SecondaryWeaponClipAmmoType), hFile );
+					g_pFullFileSystem->Write(&SecondaryClipAmmoType, strlen(SecondaryClipAmmoType), hFile );
+					g_pFullFileSystem->Write(&SecondaryClipAmmoLeft, strlen(SecondaryClipAmmoLeft), hFile);
+					}
+				}
+				
+		//Now increase our weapon slot number for the next weapon (if needed).
+		WeaponSlot ++;
+		}
+		
+	  //Also write on a new line a } to close off this Players section. Now that we're done with all weapons.
+	  char SecClose[32];
+	  Q_snprintf(SecClose,sizeof(SecClose), "\n\n}\n\n",NULL);
+	  g_pFullFileSystem->Write( &SecClose, strlen(SecClose), hFile );
+	}
+	
+	//Close the file. Important or changes don't get saved till the exe closes which we don't want.
+	g_pFullFileSystem->Close( hFile );
+	}
+}
+ #endif //SecobMod__SAVERESTORE

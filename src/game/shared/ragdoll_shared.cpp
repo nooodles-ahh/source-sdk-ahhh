@@ -781,7 +781,9 @@ bool ShouldRemoveThisRagdoll( CBaseAnimating *pRagdoll )
 	}
 
 #else
+#ifndef SM_AI_FIXES
 	CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+#endif
 
 	if( !UTIL_FindClientInPVS( pRagdoll->edict() ) )
 	{
@@ -790,6 +792,7 @@ bool ShouldRemoveThisRagdoll( CBaseAnimating *pRagdoll )
 
 		return true;
 	}
+#ifndef SM_AI_FIXES
 	else if( !pPlayer->FInViewCone( pRagdoll ) )
 	{
 		if ( g_debug_ragdoll_removal.GetBool() )
@@ -797,6 +800,7 @@ bool ShouldRemoveThisRagdoll( CBaseAnimating *pRagdoll )
 		
 		return true;
 	}
+#endif
 
 #endif
 
@@ -810,7 +814,7 @@ bool ShouldRemoveThisRagdoll( CBaseAnimating *pRagdoll )
 // Cull stale ragdolls. There is an ifdef here: one version for episodic, 
 // one for everything else.
 //-----------------------------------------------------------------------------
-#if HL2_EPISODIC
+#ifdef HL2_EPISODIC
 
 void CRagdollLRURetirement::Update( float frametime ) // EPISODIC VERSION
 {

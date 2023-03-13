@@ -52,8 +52,10 @@ public:
 #endif
 
 private:
+#ifndef SM_SP_FIXES
 	// Rules change for the mega physgun
 	CNetworkVar( bool, m_bMegaPhysgun );
+#endif
 
 #ifdef CLIENT_DLL
 
@@ -79,7 +81,10 @@ private:
 	virtual void			PlayerThink( CBasePlayer *pPlayer );
 	virtual float			GetAmmoDamage( CBaseEntity *pAttacker, CBaseEntity *pVictim, int nAmmoType );
 
+#ifndef SM_SP_FIXES
 	virtual bool			ShouldBurningPropsEmitLight();
+#endif
+
 public:
 
 	bool AllowDamage( CBaseEntity *pVictim, const CTakeDamageInfo &info );
@@ -88,9 +93,14 @@ public:
 	bool	NPC_ShouldDropHealth( CBasePlayer *pRecipient );
 	void	NPC_DroppedHealth( void );
 	void	NPC_DroppedGrenade( void );
-	bool	MegaPhyscannonActive( void ) { return m_bMegaPhysgun;	}
 	
+#ifndef SM_SP_FIXES
+	bool	MegaPhyscannonActive( void ) { return m_bMegaPhysgun;	}
+#endif
+	
+#ifndef SM_AI_FIXES
 	virtual bool IsAlyxInDarknessMode();
+#endif
 
 private:
 

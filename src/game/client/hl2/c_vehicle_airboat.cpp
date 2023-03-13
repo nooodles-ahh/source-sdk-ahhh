@@ -359,7 +359,9 @@ void C_PropAirboat::DampenEyePosition( Vector &vecVehicleEyePos, QAngle &vecVehi
 	// Keep static the sideways motion.
 
 	// Dampen forward/backward motion.
+#ifndef SM_SP_FIXES
 	DampenForwardMotion( vecVehicleEyePos, vecVehicleEyeAngles, flFrameTime );
+#endif
 
 	// Blend up/down motion.
 	DampenUpMotion( vecVehicleEyePos, vecVehicleEyeAngles, flFrameTime );

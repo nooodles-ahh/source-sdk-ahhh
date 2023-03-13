@@ -63,6 +63,11 @@ acttable_t	CWeaponCrowbar::m_acttable[] =
 	{ ACT_MP_RELOAD_CROUCH,				ACT_HL2MP_GESTURE_RELOAD_MELEE,			false },
 
 	{ ACT_MP_JUMP,						ACT_HL2MP_JUMP_MELEE,					false },
+#ifdef SM_AI_FIXES
+	{ ACT_MELEE_ATTACK1,	ACT_MELEE_ATTACK_SWING, true }, 
+	{ ACT_IDLE,				ACT_IDLE_ANGRY_MELEE,	false }, 
+	{ ACT_IDLE_ANGRY,		ACT_IDLE_ANGRY_MELEE,	false }, 
+#endif
 #else
 	{ ACT_RANGE_ATTACK1,				ACT_RANGE_ATTACK_SLAM, true },
 	{ ACT_HL2MP_IDLE,					ACT_HL2MP_IDLE_MELEE,					false },
@@ -126,6 +131,23 @@ void CWeaponCrowbar::HandleAnimEventMeleeHit( animevent_t *pEvent, CBaseCombatCh
 	// But only if we're basically facing that direction
 	Vector vecDirection;
 	AngleVectors( GetAbsAngles(), &vecDirection );
+
+#ifdef SM_AI_FIXES
+	CBaseEntity *pEnemy = pOperator->MyNPCPointer() ? pOperator->MyNPCPointer()->GetEnemy() : NULL;
+	if ( pEnemy )
+	{
+		Vector vecDelta;
+		VectorSubtract( pEnemy->WorldSpaceCenter(), pOperator->Weapon_ShootPosition(), vecDelta );
+		VectorNormalize( vecDelta );
+		
+		Vector2D vecDelta2D = vecDelta.AsVector2D();
+		Vector2DNormalize( vecDelta2D );
+		if ( DotProduct2D( vecDelta2D, vecDirection.AsVector2D() ) > 0.8f )
+		{
+			vecDirection = vecDelta;
+		}
+	}
+#endif
 
 	Vector vecEnd;
 	VectorMA( pOperator->Weapon_ShootPosition(), 50, vecDirection, vecEnd );

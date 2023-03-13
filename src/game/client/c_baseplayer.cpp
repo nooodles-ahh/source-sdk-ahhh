@@ -3035,3 +3035,15 @@ void CC_DumpClientSoundscapeData( const CCommand& args )
 	Msg("End dump.\n");
 }
 static ConCommand soundscape_dumpclient("soundscape_dumpclient", CC_DumpClientSoundscapeData, "Dumps the client's soundscape data.\n", FCVAR_CHEAT);
+
+#ifdef SecobMod__ALLOW_PLAYER_MODELS_IN_VEHICLES
+	//SecobMod__Information: Tony Sergi has said on the hl2coders list that third person models need to invalidate their bone cache, so we do that here.
+	const Vector &C_BasePlayer::GetRenderOrigin( void )
+	{
+		if (IsInAVehicle())
+		{
+		InvalidateBoneCache();
+		}
+	 return BaseClass::GetRenderOrigin();
+	}
+#endif //SecobMod__ALLOW_PLAYER_MODELS_IN_VEHICLES

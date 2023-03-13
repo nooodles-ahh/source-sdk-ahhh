@@ -84,6 +84,10 @@ class CHL2MPRules : public CTeamplayRules
 public:
 	DECLARE_CLASS( CHL2MPRules, CTeamplayRules );
 
+#ifdef SM_SP_FIXES
+	bool	MegaPhyscannonActive( void ) { return m_bMegaPhysgun;	}
+#endif
+
 #ifdef CLIENT_DLL
 
 	DECLARE_CLIENTCLASS_NOBASE(); // This makes datatables able to access our private vars.
@@ -91,6 +95,8 @@ public:
 #else
 
 	DECLARE_SERVERCLASS_NOBASE(); // This makes datatables able to access our private vars.
+	virtual bool IsAlyxInDarknessMode();
+	virtual bool ShouldBurningPropsEmitLight();
 #endif
 	
 	CHL2MPRules();
@@ -134,6 +140,10 @@ public:
 	void    CheckChatForReadySignal( CHL2MP_Player *pPlayer, const char *chatmsg );
 	const char *GetChatFormat( bool bTeamOnly, CBasePlayer *pPlayer );
 
+#ifdef SM_AI_FIXES
+	void InitDefaultAIRelationships( void );
+#endif
+
 #endif
 	virtual void ClientDisconnected( edict_t *pClient );
 
@@ -158,6 +168,11 @@ private:
 	bool m_bCompleteReset;
 	bool m_bAwaitingReadyRestart;
 	bool m_bHeardAllPlayersReady;
+
+#ifdef SM_AI_FIXES
+	// Rules change for the mega physgun
+	CNetworkVar( bool, m_bMegaPhysgun );
+#endif
 
 #ifndef CLIENT_DLL
 	bool m_bChangelevelDone;

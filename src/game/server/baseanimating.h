@@ -72,6 +72,10 @@ public:
 	// This defaults to off.
 	void	UseClientSideAnimation();
 
+#ifdef SM_SP_FIXES
+	//SecobMod__Information: Set to match DutchMegas' Collaborate mod code.
+	void SetClientSideAnimation( bool val ) { m_bClientSideAnimation = val; };
+#endif	
 	// Tells whether or not we're using client-side animation. Used for controlling
 	// the transmission of animtime.
 	bool	IsUsingClientSideAnimation()	{ return m_bClientSideAnimation; }

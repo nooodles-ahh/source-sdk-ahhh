@@ -13,7 +13,11 @@
 #include "baseachievement.h"
 #include "iservervehicle.h"
 #include "npc_antlion.h"
+#ifdef SM_SP_FIXES
+#include "../episodic/npc_hunter.h"
+#else
 #include "npc_hunter.h"
+#endif
 
 
 class CAchievementEp2KillPoisonAntlion : public CBaseAchievement
