@@ -1,0 +1,3 @@
+[submodule "src/video_services"]
+	path = src/video_services
+	url = https://github.com/nooodles-ahh/video_services.git
