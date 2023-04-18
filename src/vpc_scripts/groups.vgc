@@ -22,7 +22,18 @@ $Group "game"
 	"server"
 	"tier1"
 	"vgui_controls"
+}
+
+$Group "everything"
+{
+	"client"
+	"mathlib"
+	"raytrace"
+	"server"
+	"tier1"
+	"vgui_controls"
 	"video_services"
+	"vaudio_minimp3"
 }
 
 $Group "shaders"

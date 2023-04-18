@@ -52,3 +52,8 @@ $Project "video_services"
 {
 	"video_services/video_services/video_services.vpc"
 }
+
+$Project "vaudio_minimp3"
+{
+	"vaudio_minimp3/vaudio_minimp3.vpc"
+}
