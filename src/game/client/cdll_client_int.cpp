@@ -1013,6 +1013,36 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 
 	vgui::VGui_InitMatSysInterfacesList( "ClientDLL", &appSystemFactory, 1 );
 
+#ifdef WEBM_VIDEO_SERVICES_MOD
+	// disconnect the original video services
+	if ( g_pVideo )
+	{
+		g_pVideo->Shutdown();
+		g_pVideo->Disconnect();
+		g_pVideo = nullptr;
+	}
+
+	// get video_services.dll from our game's bin folder
+	char video_service_path[MAX_PATH];
+	Q_snprintf( video_service_path, sizeof( video_service_path ), "%s\\bin\\video_services.dll", engine->GetGameDirectory() );
+
+	CSysModule *video_services_module = Sys_LoadModule( video_service_path );
+	if ( video_services_module != nullptr )
+	{
+		CreateInterfaceFn VideoServicesFactory = Sys_GetFactory( video_services_module );
+		if ( VideoServicesFactory )
+		{
+			g_pVideo = (IVideoServices *)VideoServicesFactory( VIDEO_SERVICES_INTERFACE_VERSION, NULL );
+			if ( g_pVideo != nullptr )
+			{
+				factorylist_t Factories;
+				FactoryList_Retrieve( Factories );
+				g_pVideo->Connect( Factories.appSystemFactory );
+			}
+		}
+	}
+#endif
+
 	// Add the client systems.	
 	
 	// Client Leaf System has to be initialized first, since DetailObjectSystem uses it
@@ -1187,6 +1217,15 @@ void CHLClient::Shutdown( void )
     {
         g_pAchievementsAndStatsInterface->ReleasePanel();
     }
+
+#ifdef WEBM_VIDEO_SERVICES_MOD
+	if ( g_pVideo )
+	{
+		g_pVideo->Shutdown();
+		g_pVideo->Disconnect();
+		g_pVideo = nullptr;
+	}
+#endif
 
 #ifdef SIXENSE
 	g_pSixenseInput->Shutdown();

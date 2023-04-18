@@ -47,3 +47,8 @@ $Project "vgui_controls"
 {
 	"vgui2\vgui_controls\vgui_controls.vpc" [$WIN32||$X360||$POSIX]
 }
+
+$Project "video_services"
+{
+	"video_services/video_services/video_services.vpc"
+}
