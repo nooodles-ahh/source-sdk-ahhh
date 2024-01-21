@@ -226,9 +226,9 @@ Vector CTriggerWeaponDissolve::GetConduitPoint( CBaseEntity *pTarget )
 void CTriggerWeaponDissolve::DissolveThink( void )
 {
 	int	numWeapons = m_pWeapons.Count();
-	Vector pWeaponLocation;
 
 #ifdef SM_SP_FIXES
+	Vector pWeaponLocation;
 	if (numWeapons > 0)
 	{
 		pWeaponLocation = m_pWeapons[1]->GetAbsOrigin();
